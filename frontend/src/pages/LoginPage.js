@@ -7,9 +7,7 @@ import { api } from '../utils/api';
 const DEMO_ACCOUNTS = [
   { role: 'customer', email: 'customer@demo.com', password: 'demo123', name: 'Priya Nair' },
   { role: 'provider', email: 'provider@demo.com', password: 'demo123', name: 'Ravi Kumar' },
-  { role: 'admin',    email: 'admin@demo.com',    password: 'demo123', name: 'Admin User' },
 ];
-
 
 export const LoginPage = () => {
   const [form, setForm] = useState({ email: '', password: '', role: '' });
@@ -19,40 +17,54 @@ export const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
 
-  try {
-    const response = await api.post('/auth/login', {
-      email: form.email,
-      password: form.password
-    });
+    if (!form.role) {
+      setError('Please select Customer or Provider before signing in.');
+      return;
+    }
 
-    const { token, user } = response.data;
+    setLoading(true);
 
-    // Save to context
-    login(user, token);
+    try {
+      const response = await api.post('/auth/login', {
+        email: form.email,
+        password: form.password
+      });
 
-    // Redirect based on role
-    navigate(`/${user.role}/dashboard`);
-  } catch (err) {
-    setError(
-      err.response?.data?.message || 'Invalid credentials'
-    );
-  }
+      const { token, user } = response.data;
 
-  setLoading(false);
-};
+      // Role restriction
+      if (user.role.toLowerCase() !== form.role.toLowerCase()) {
+        setError(`You are registered as ${user.role}. Please select correct role.`);
+        setLoading(false);
+        return;
+      }
+
+      login(user, token);
+      navigate(`/${user.role}/dashboard`);
+
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid credentials');
+    }
+
+    setLoading(false);
+  };
 
   const fillDemo = (account) => {
-    setForm({ email: account.email, password: account.password });
+    setForm({
+      email: account.email,
+      password: account.password,
+      role: account.role
+    });
     setError('');
   };
 
   return (
     <div className="min-h-screen animated-gradient flex items-center justify-center p-4">
+      
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/5 rounded-full blur-3xl" />
@@ -60,6 +72,7 @@ const handleSubmit = async (e) => {
       </div>
 
       <div className="w-full max-w-md relative z-10 animate-slide-up">
+
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-500 rounded-2xl shadow-glow-orange mb-4">
@@ -68,22 +81,47 @@ const handleSubmit = async (e) => {
           <h1 className="font-display font-bold text-3xl text-white">
             FixIt<span className="text-brand-500">Now</span>
           </h1>
-          <p className="text-dark-400 mt-1 text-sm">Your neighborhood service marketplace</p>
+          <p className="text-dark-400 mt-1 text-sm">
+            Your neighborhood service marketplace
+          </p>
         </div>
 
         {/* Card */}
         <div className="bg-glass rounded-2xl p-6 shadow-2xl">
-          <h2 className="font-display font-semibold text-xl text-white mb-6 text-center">Welcome back</h2>
+          <h2 className="font-display font-semibold text-xl text-white mb-6 text-center">
+            Welcome back
+          </h2>
+
+          {/* Role Selector */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {['customer', 'provider'].map(role => (
+              <button
+                key={role}
+                type="button"
+                onClick={() => setForm({ ...form, role })}
+                className={`p-3 rounded-xl border-2 transition-all capitalize ${
+                  form.role === role
+                    ? 'border-brand-500 bg-brand-500/10 text-white'
+                    : 'border-dark-600 bg-dark-800 text-dark-400 hover:border-dark-500'
+                }`}
+              >
+                {role === 'customer' ? '👤 Customer' : '🛠️ Provider'}
+              </button>
+            ))}
+          </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm mb-4 animate-fade-in">
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 text-sm mb-4">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+
             <div>
-              <label className="text-sm font-medium text-dark-300 mb-1.5 block">Email address</label>
+              <label className="text-sm font-medium text-dark-300 mb-1.5 block">
+                Email address
+              </label>
               <input
                 type="email"
                 placeholder="you@example.com"
@@ -93,8 +131,11 @@ const handleSubmit = async (e) => {
                 required
               />
             </div>
+
             <div>
-              <label className="text-sm font-medium text-dark-300 mb-1.5 block">Password</label>
+              <label className="text-sm font-medium text-dark-300 mb-1.5 block">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPass ? 'text' : 'password'}
@@ -107,39 +148,39 @@ const handleSubmit = async (e) => {
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-200 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-200"
                 >
                   {showPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="accent-brand-500" />
-                <span className="text-dark-400">Remember me</span>
-              </label>
-              <button type="button" className="text-brand-400 hover:text-brand-300 transition-colors">
-                Forgot password?
-              </button>
-            </div>
-
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading ? (
-                <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Signing in...</>
+                <>
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Signing in...
+                </>
               ) : (
-                <><LogIn className="w-5 h-5" /> Sign in</>
+                <>
+                  <LogIn className="w-5 h-5" />
+                  Sign in
+                </>
               )}
             </button>
+
           </form>
 
           <p className="text-center text-dark-400 text-sm mt-5">
             Don't have an account?{' '}
-            <Link to="/register" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
+            <Link
+              to="/register"
+              className="text-brand-400 hover:text-brand-300 font-medium"
+            >
               Sign up
             </Link>
           </p>
@@ -150,22 +191,28 @@ const handleSubmit = async (e) => {
           <p className="text-xs font-mono uppercase tracking-wider text-dark-400 text-center mb-3">
             ✨ Quick Demo Access
           </p>
-          <div className="grid grid-cols-3 gap-2">
+
+          <div className="grid grid-cols-2 gap-2">
             {DEMO_ACCOUNTS.map(acc => (
               <button
                 key={acc.role}
                 onClick={() => fillDemo(acc)}
-                className="p-2.5 rounded-xl bg-dark-800 border border-dark-600 hover:border-brand-500 hover:bg-dark-700 transition-all text-center group"
+                className="p-2.5 rounded-xl bg-dark-800 border border-dark-600 hover:border-brand-500 hover:bg-dark-700 transition-all text-center"
               >
                 <div className="text-lg mb-1">
-                  {acc.role === 'customer' ? '👤' : acc.role === 'provider' ? '🛠️' : '⚙️'}
+                  {acc.role === 'customer' ? '👤' : '🛠️'}
                 </div>
-                <p className="text-xs font-semibold text-white capitalize">{acc.role}</p>
-                <p className="text-[10px] text-dark-400 group-hover:text-dark-300 transition-colors">Click to fill</p>
+                <p className="text-xs font-semibold text-white capitalize">
+                  {acc.role}
+                </p>
+                <p className="text-[10px] text-dark-400">
+                  Click to fill
+                </p>
               </button>
             ))}
           </div>
         </div>
+
       </div>
     </div>
   );

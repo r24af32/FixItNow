@@ -14,19 +14,20 @@ export const ServicesPage = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   useEffect(() => {
     api.get('/services')
       .then(res => {
         const enhanced = res.data.map(service => ({
-          ...service,
-          rating: 0,
-          reviews: 0,
-          verified: false,
-          completedJobs: 0,
-          image: "🔧",
-          distance: ""
-        }));
+        ...service,
+        rating: service.rating ?? 0,
+        reviews: service.reviews ?? 0,
+        verified: service.verified ?? false,   // KEEP BACKEND VALUE
+        completedJobs: service.completedJobs ?? 0,
+        image: service.image ?? "🔧",
+        distance: service.distance ?? ""
+      }));
 
         setServices(enhanced);
         setLoading(false);
@@ -38,18 +39,43 @@ export const ServicesPage = () => {
   }, []);
 
   const filtered = useMemo(() => {
-    let list = [...services];
-    if (selectedCat !== 'All') list = list.filter(s => s.category === selectedCat);
-    if (search) list = list.filter(s =>
-      s.category.toLowerCase().includes(search.toLowerCase()) ||
-      s.providerName.toLowerCase().includes(search.toLowerCase()) ||
-      s.subcategory.toLowerCase().includes(search.toLowerCase())
+  let list = [...services];
+
+  // Category
+  if (selectedCat !== 'All') {
+    list = list.filter(s => s.category === selectedCat);
+  }
+
+  // Search
+  if (search) {
+    list = list.filter(s =>
+      s.category?.toLowerCase().includes(search.toLowerCase()) ||
+      s.providerName?.toLowerCase().includes(search.toLowerCase()) ||
+      s.subcategory?.toLowerCase().includes(search.toLowerCase())
     );
-    list = list.filter(s => s.price <= maxPrice);
-    if (sortBy === 'price_asc') list.sort((a, b) => a.price - b.price);
-    else if (sortBy === 'price_desc') list.sort((a, b) => b.price - a.price);
-    return list;
-    }, [services, search, selectedCat, sortBy, maxPrice]);
+  }
+
+  // Price
+  list = list.filter(s => s.price <= maxPrice);
+
+  // Verified Only
+  if (verifiedOnly) {
+    list = list.filter(s => s.verified === true);
+  }
+
+  // Sorting
+  if (sortBy === 'price_asc') {
+    list.sort((a, b) => a.price - b.price);
+  } else if (sortBy === 'price_desc') {
+    list.sort((a, b) => b.price - a.price);
+  } else if (sortBy === 'distance') {
+    list.sort((a, b) => (a.distance || '').localeCompare(b.distance || ''));
+  } else {
+    list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }
+
+  return list;
+}, [services, search, selectedCat, sortBy, maxPrice, verifiedOnly]);
 
   if (loading) {
   return (
@@ -66,16 +92,21 @@ export const ServicesPage = () => {
       {/* Search Bar */}
       <div className="flex gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400 pointer-events-none" />
+
           <input
             type="text"
             placeholder="Search electricians, plumbers, carpenters..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="input-field pl-12"
+            className="input-field !pl-12 !pr-10"
           />
+
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white">
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white"
+            >
               <X className="w-4 h-4" />
             </button>
           )}
@@ -123,7 +154,12 @@ export const ServicesPage = () => {
             <div>
               <label className="text-sm font-medium text-dark-300 mb-3 block">Verified Only</label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="accent-brand-500 w-4 h-4" />
+                <input
+                  type="checkbox"
+                  checked={verifiedOnly}
+                  onChange={e => setVerifiedOnly(e.target.checked)}
+                  className="accent-brand-500 w-4 h-4"
+                />
                 <span className="text-dark-300 text-sm">Show verified providers only</span>
               </label>
             </div>
