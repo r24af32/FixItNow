@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, SlidersHorizontal, MapPin, X } from 'lucide-react';
-import { MOCK_SERVICES, SERVICE_CATEGORIES } from '../../utils/api';
+import { api, SERVICE_CATEGORIES } from '../../utils/api';
+import { useEffect } from 'react';
 import { StarRating, SectionHeader } from '../../components/common/index';
 
 export const ServicesPage = () => {
@@ -11,22 +12,52 @@ export const ServicesPage = () => {
   const [maxPrice, setMaxPrice] = useState(2000);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/services')
+      .then(res => {
+        const enhanced = res.data.map(service => ({
+          ...service,
+          rating: 0,
+          reviews: 0,
+          verified: false,
+          completedJobs: 0,
+          image: "🔧",
+          distance: ""
+        }));
+
+        setServices(enhanced);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
 
   const filtered = useMemo(() => {
-    let list = [...MOCK_SERVICES];
+    let list = [...services];
     if (selectedCat !== 'All') list = list.filter(s => s.category === selectedCat);
     if (search) list = list.filter(s =>
       s.category.toLowerCase().includes(search.toLowerCase()) ||
-      s.provider.toLowerCase().includes(search.toLowerCase()) ||
+      s.providerName.toLowerCase().includes(search.toLowerCase()) ||
       s.subcategory.toLowerCase().includes(search.toLowerCase())
     );
     list = list.filter(s => s.price <= maxPrice);
-    if (sortBy === 'rating') list.sort((a, b) => b.rating - a.rating);
-    else if (sortBy === 'price_asc') list.sort((a, b) => a.price - b.price);
+    if (sortBy === 'price_asc') list.sort((a, b) => a.price - b.price);
     else if (sortBy === 'price_desc') list.sort((a, b) => b.price - a.price);
-    else if (sortBy === 'distance') list.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
     return list;
-  }, [search, selectedCat, sortBy, maxPrice]);
+    }, [services, search, selectedCat, sortBy, maxPrice]);
+
+  if (loading) {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <p className="text-white text-lg">Loading services...</p>
+    </div>
+  );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -170,9 +201,16 @@ const ServiceCard = ({ service, view }) => {
             <span className="text-dark-400 text-xs">{service.subcategory}</span>
             {service.verified && <span className="badge bg-green-500/20 text-green-400 border border-green-500/30 text-[10px]">✓ Verified</span>}
           </div>
-          <p className="text-dark-400 text-sm">{service.provider}</p>
+          <p className="text-dark-400 text-sm">{service.providerName}</p>
           <div className="flex items-center gap-3 mt-1">
-            <div className="flex items-center gap-1"><StarRating rating={service.rating} size="sm" /><span className="text-xs text-dark-400">{service.rating} ({service.reviews})</span></div>
+            {service.rating > 0 && (
+            <div className="flex items-center gap-1">
+              <StarRating rating={service.rating} size="sm" />
+              <span className="text-xs text-dark-400">
+                {service.rating} ({service.reviews})
+              </span>
+            </div>
+            )}
             <span className="flex items-center gap-1 text-xs text-dark-400"><MapPin className="w-3 h-3" />{service.distance}</span>
           </div>
         </div>
@@ -184,37 +222,81 @@ const ServiceCard = ({ service, view }) => {
     );
   }
 
-  return (
+    return (
     <div className="bg-dark-800 border border-dark-700 rounded-2xl overflow-hidden card-hover group">
       {/* Top */}
       <div className="relative p-5 pb-4">
         <div className="flex items-start justify-between mb-4">
-          <div className="w-14 h-14 bg-dark-700 rounded-xl flex items-center justify-center text-3xl">{service.image}</div>
+          <div className="w-14 h-14 bg-dark-700 rounded-xl flex items-center justify-center text-3xl">
+            {service.image || "🔧"}
+          </div>
+
           <div className="flex flex-col items-end gap-1">
-            {service.verified && <span className="badge bg-green-500/20 text-green-400 border border-green-500/30 text-[10px]">✓ Verified</span>}
-            <span className="text-xs text-dark-400 flex items-center gap-0.5"><MapPin className="w-3 h-3" />{service.distance}</span>
+            {service.verified && (
+              <span className="badge bg-green-500/20 text-green-400 border border-green-500/30 text-[10px]">
+                ✓ Verified
+              </span>
+            )}
+
+            {service.providerLocation && (
+              <span className="text-xs text-dark-400 flex items-center gap-0.5">
+                <MapPin className="w-3 h-3" />
+                {service.providerLocation}
+              </span>
+            )}
           </div>
         </div>
-        <h4 className="font-display font-semibold text-white mb-0.5">{service.category}</h4>
-        <p className="text-xs text-dark-400 mb-1">{service.subcategory}</p>
-        <p className="text-sm text-dark-300 mb-3 flex items-center gap-1">
-          <span className="w-5 h-5 bg-brand-500/20 rounded-full flex items-center justify-center text-[10px]">👤</span>
-          {service.provider}
+
+        <h4 className="font-display font-semibold text-white mb-0.5">
+          {service.category}
+        </h4>
+
+        <p className="text-xs text-dark-400 mb-1">
+          {service.subcategory}
         </p>
-        <div className="flex items-center gap-2">
-          <StarRating rating={service.rating} size="sm" />
-          <span className="text-sm font-semibold text-white">{service.rating}</span>
-          <span className="text-dark-500 text-xs">({service.reviews} reviews)</span>
-        </div>
-        <p className="text-dark-500 text-xs mt-1">{service.completedJobs} jobs completed</p>
+
+        <p className="text-sm text-dark-300 mb-3 flex items-center gap-1">
+          <span className="w-5 h-5 bg-brand-500/20 rounded-full flex items-center justify-center text-[10px]">
+            👤
+          </span>
+          {service.providerName}
+        </p>
+
+        {/* Rating Section (Render only if exists) */}
+        {service.rating && (
+          <>
+            <div className="flex items-center gap-2">
+              <StarRating rating={service.rating} size="sm" />
+              <span className="text-sm font-semibold text-white">
+                {service.rating}
+              </span>
+              <span className="text-dark-500 text-xs">
+                ({service.reviews || 0} reviews)
+              </span>
+            </div>
+
+            {service.completedJobs && (
+              <p className="text-dark-500 text-xs mt-1">
+                {service.completedJobs} jobs completed
+              </p>
+            )}
+          </>
+        )}
       </div>
+
       {/* Bottom */}
       <div className="border-t border-dark-700 px-5 py-3 flex items-center justify-between bg-dark-900/50">
         <div>
           <p className="text-xs text-dark-500">Starting from</p>
-          <p className="font-bold text-brand-400 text-xl">₹{service.price}</p>
+          <p className="font-bold text-brand-400 text-xl">
+            ₹{service.price}
+          </p>
         </div>
-        <Link to={`/customer/services/${service.id}`} className="btn-primary py-2.5 text-sm">
+
+        <Link
+          to={`/customer/services/${service.id}`}
+          className="btn-primary py-2.5 text-sm"
+        >
           Book Now
         </Link>
       </div>

@@ -24,6 +24,7 @@ import { ProviderServicesPage, ProviderBookingsPage } from './pages/provider/Pro
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsersPage, AdminProvidersPage, AdminDisputesPage, PendingProvidersPage } from './pages/admin/AdminPages';
 
+
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
 

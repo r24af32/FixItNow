@@ -1,14 +1,18 @@
 package com.fixitnow.backend.controller;
 
 import com.fixitnow.backend.dto.ServiceRequest;
+import com.fixitnow.backend.dto.ServiceResponse;
 import com.fixitnow.backend.entity.ServiceEntity;
 import com.fixitnow.backend.entity.User;
+import com.fixitnow.backend.repository.ProviderProfileRepository;
 import com.fixitnow.backend.repository.ServiceRepository;
 import com.fixitnow.backend.repository.UserRepository;
 import com.fixitnow.backend.dto.ServiceRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
+
+import com.fixitnow.backend.entity.ProviderProfile;
 import com.fixitnow.backend.entity.Role;
 import java.security.Principal;
 import java.util.List;
@@ -23,6 +27,9 @@ public class ServiceController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ProviderProfileRepository providerProfileRepository;
 
     // 🔹 Provider adds service
     @PostMapping
@@ -45,14 +52,25 @@ public class ServiceController {
         service.setPrice(request.getPrice());
         service.setAvailability(request.getAvailability());
         service.setProvider(provider);
+        service.setStatus("PENDING");
+
+        ProviderProfile profile = providerProfileRepository.findByUser(provider)
+        .orElseThrow(() -> new RuntimeException("Provider profile not found"));
+
+        if (!"APPROVED".equals(profile.getApprovalStatus())) {
+            throw new RuntimeException("Provider not approved by admin");
+        }
 
         return serviceRepository.save(service);
     }
 
     // 🔹 Get all services
     @GetMapping
-    public List<ServiceEntity> getAllServices() {
-        return serviceRepository.findAll();
+    public List<ServiceResponse> getAllServices() {
+        return serviceRepository.findByStatus("APPROVED")
+                .stream()
+                .map(ServiceResponse::new)
+                .toList();
     }
 
     // 🔹 Get by category
@@ -63,8 +81,115 @@ public class ServiceController {
 
     // 🔹 Get by ID
     @GetMapping("/{id}")
-    public ServiceEntity getById(@PathVariable Long id) {
-        return serviceRepository.findById(id)
+    public ServiceResponse getById(@PathVariable Long id) {
+        ServiceEntity service = serviceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Service not found"));
+
+        return new ServiceResponse(service);
     }
+    // @PutMapping("/{id}/approve")
+    // public ServiceEntity approveService(@PathVariable Long id) {
+    //     ServiceEntity service = serviceRepository.findById(id)
+    //             .orElseThrow(() -> new RuntimeException("Service not found"));
+
+    //     service.setStatus("APPROVED");
+    //     return serviceRepository.save(service);
+    // }
+
+    // @PutMapping("/{id}/reject")
+    // public ServiceEntity rejectService(@PathVariable Long id) {
+    //     ServiceEntity service = serviceRepository.findById(id)
+    //             .orElseThrow(() -> new RuntimeException("Service not found"));
+
+    //     service.setStatus("REJECTED");
+    //     return serviceRepository.save(service);
+    // }
+    @GetMapping("/provider")
+    public List<ServiceResponse> getMyServices(Principal principal) {
+
+        String email = principal.getName();
+
+        User provider = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return serviceRepository.findByProviderId(provider.getId())
+                .stream()
+                .map(ServiceResponse::new)
+                .toList();
+    }
+    @DeleteMapping("/{id}")
+    public void deleteService(@PathVariable Long id, Principal principal) {
+
+        String email = principal.getName();
+
+        User provider = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        ServiceEntity service = serviceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Service not found"));
+
+        if (!service.getProvider().getId().equals(provider.getId())) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        serviceRepository.delete(service);
+    }
+    @PutMapping("/{id}")
+    public ServiceEntity updateService(
+            @PathVariable Long id,
+            @RequestBody ServiceRequest request,
+            Principal principal) {
+
+        String email = principal.getName();
+
+        User provider = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        ServiceEntity service = serviceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Service not found"));
+
+        if (!service.getProvider().getId().equals(provider.getId())) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        service.setCategory(request.getCategory());
+        service.setSubcategory(request.getSubcategory());
+        service.setDescription(request.getDescription());
+        service.setPrice(request.getPrice());
+        service.setAvailability(request.getAvailability());
+
+        service.setStatus("PENDING"); // Force re-approval after edit
+
+        return serviceRepository.save(service);
+    }
+
+    @GetMapping("/admin/pending")
+    public List<ServiceResponse> getPendingServices() {
+
+        return serviceRepository.findByStatus("PENDING")
+                .stream()
+                .map(ServiceResponse::new)
+                .toList();
+    }
+
+    @PutMapping("/admin/{id}/approve")
+    public ServiceEntity approveService(@PathVariable Long id) {
+        ServiceEntity service = serviceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Service not found"));
+
+        service.setStatus("APPROVED");
+        return serviceRepository.save(service);
+    }
+
+    @PutMapping("/admin/{id}/reject")
+    public ServiceEntity rejectService(@PathVariable Long id) {
+        ServiceEntity service = serviceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Service not found"));
+
+        service.setStatus("REJECTED");
+        return serviceRepository.save(service);
+    }
+
+
+
 }

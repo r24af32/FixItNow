@@ -28,7 +28,17 @@ public class ServiceEntity {
     @JoinColumn(name = "provider_id")
     private User provider;
 
+    @Column(nullable = false)
+    private String status = "PENDING";
     // Getters & Setters
+
+    public String getStatus() {
+    return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
     public Long getId() {
         return id;
