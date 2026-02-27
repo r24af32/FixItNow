@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, UserPlus, Wrench, MapPin, Clock, Upload, CheckCircle, X, FileText, Navigation, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../utils/api';
+
 
 // ─── Time Slots Configuration ─────────────────────────────────────────────────
 const TIME_SLOTS = [
@@ -17,16 +19,16 @@ const MAX_FILE_SIZE_MB = 5;
 const ACCEPTED_MIME = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
 
 // ─── Success Popup ────────────────────────────────────────────────────────────
-const SuccessPopup = ({ onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => onClose(), 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
+const SuccessPopup = ({ onClose, role }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
     <div className="relative bg-dark-800 border border-dark-600 rounded-2xl w-full max-w-md animate-slide-up shadow-2xl p-8 text-center">
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-white transition-colors"
+      >
+        <X className="w-5 h-5" />
+      </button>
       <div className="relative inline-flex items-center justify-center mb-5">
         <div className="w-20 h-20 rounded-full bg-green-500/20 border-2 border-green-500/40 flex items-center justify-center">
           <CheckCircle className="w-10 h-10 text-green-400" />
@@ -34,22 +36,31 @@ const SuccessPopup = ({ onClose }) => {
         <div className="absolute inset-0 rounded-full border-2 border-green-400 animate-ping opacity-20" />
       </div>
       <h3 className="font-display font-bold text-xl text-white mb-3">
-        Account Created Successfully
-      </h3>
-      <p className="text-dark-300 text-sm leading-relaxed mb-6">
-        Your account has been created. Redirecting you to login...
-      </p>
-      <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-green-500/10 border border-green-500/20 rounded-xl">
-        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-        <span className="text-green-400 text-sm font-medium">Redirecting to Login in 3 seconds...</span>
+  {role === "provider"
+    ? "Profile Submitted Successfully!"
+    : "Account Created Successfully!"}
+    </h3>
+
+    <p className="text-dark-300 text-sm leading-relaxed mb-6">
+      {role === "provider"
+        ? "Your profile has been submitted successfully and is under admin verification. You will be notified once approved."
+        : "Your account has been created successfully. You can now login."}
+    </p>
+
+    {role === "provider" && (
+      <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+        <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0" />
+        <span className="text-yellow-400 text-sm font-medium">
+          Status: Pending Admin Approval
+        </span>
       </div>
+    )}
       <button onClick={onClose} className="btn-primary w-full">
-        Go to Login Now
+        Got It, Thanks!
       </button>
     </div>
   </div>
 );
-};
 
 // ─── Location Toast Popup ────────────────────────────────────────────────────
 const LocationToast = ({ type, onClose }) => {
@@ -92,9 +103,9 @@ export const RegisterPage = () => {
   const [showSuccess, setShowSuccess]     = useState(false);
   const [geoCoords, setGeoCoords]         = useState({ lat: '', lng: '' });
   const [geoStatus, setGeoStatus]         = useState('idle'); // 'idle' | 'loading' | 'success' | 'denied'
-  const [geoAddress, setGeoAddress]       = useState('');
-  useAuth(); // auth context available for future use
+  const { login } = useAuth();
   const navigate  = useNavigate();
+  const [geoAddress, setGeoAddress] = useState('');
 
   // ── Reset form completely when component mounts ──────────────────────────────
   useEffect(() => {
@@ -110,21 +121,14 @@ export const RegisterPage = () => {
     setGeoStatus('idle');
   }, []); // Empty dependency - runs once on mount
 
-  // ── Reset ALL fields when role changes ───────────────────────────────────────
+  // ── Reset provider-specific fields when role changes ─────────────────────────
   useEffect(() => {
-    setForm(prev => ({
-      ...prev,
-      password: '',
-      confirmPassword: '',
-      category: '',
-      serviceArea: '',
-    }));
-    setShowPass(false);
-    setShowConfirmPass(false);
-    setSelectedSlots([]);
-    setIdFile(null);
-    setIdDocType('');
-    setErrors({});
+    if (form.role === 'customer') {
+      setSelectedSlots([]);
+      setIdFile(null);
+      setIdDocType('');
+      setForm(prev => ({ ...prev, category: '', serviceArea: '' }));
+    }
   }, [form.role]);
 
   // ── Slot toggle ──────────────────────────────────────────────────────────────
@@ -153,47 +157,56 @@ export const RegisterPage = () => {
 
   // ── Geolocation capture ──────────────────────────────────────────────────────
   const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      setGeoStatus('denied');
-      return;
-    }
-    setGeoStatus('loading');
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude.toFixed(6);
-        const lng = pos.coords.longitude.toFixed(6);
-        setGeoCoords({ lat, lng });
-        // Reverse geocode to human-readable address
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
-            { headers: { 'Accept-Language': 'en' } }
-          );
-          const data = await res.json();
-          const a = data.address || {};
-          const parts = [
-            a.neighbourhood || a.suburb || a.village || a.town,
-            a.city || a.county,
-            a.state,
-          ].filter(Boolean);
-          const addr = parts.join(', ') || data.display_name || `${lat}, ${lng}`;
-          setGeoAddress(addr);
-          // Auto-fill the location form field
-          setForm(prev => ({ ...prev, location: addr }));
-          setErrors(prev => ({ ...prev, location: '' }));
-        } catch {
-          setGeoAddress(`${lat}, ${lng}`);
-          setForm(prev => ({ ...prev, location: `${lat}, ${lng}` }));
-        }
-        setGeoStatus('success');
-      },
-      () => {
-        setGeoStatus('denied');
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
+  if (!navigator.geolocation) {
+    setGeoStatus('denied');
+    return;
+  }
 
+  setGeoStatus('loading');
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+
+      setGeoCoords({ lat, lng });
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+
+        const data = await res.json();
+        const a = data.address || {};
+
+        const parts = [
+          a.neighbourhood || a.suburb || a.village || a.town,
+          a.city || a.county,
+          a.state,
+        ].filter(Boolean);
+
+        const addr = parts.join(', ') || data.display_name || `${lat}, ${lng}`;
+
+        setGeoAddress(addr);
+
+        // 🔥 Auto-fill location field
+        setForm(prev => ({ ...prev, location: addr }));
+        setErrors(prev => ({ ...prev, location: '' }));
+
+      } catch {
+        setGeoAddress(`${lat}, ${lng}`);
+        setForm(prev => ({ ...prev, location: `${lat}, ${lng}` }));
+      }
+
+      setGeoStatus('success');
+    },
+    () => {
+      setGeoStatus('denied');
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+};
   // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
@@ -212,36 +225,54 @@ export const RegisterPage = () => {
   };
 
   // ── Submit ───────────────────────────────────────────────────────────────────
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const v = validate();
-    if (Object.keys(v).length > 0) { setErrors(v); return; }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  const v = validate();
+  if (Object.keys(v).length > 0) {
+    setErrors(v);
+    return;
+  }
+
+  try {
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    if (form.role === 'provider') {
-      // Providers need admin approval — show popup, redirect to login
-      // Payload includes coordinates if captured (backend may ignore if not yet wired)
-      // eslint-disable-next-line no-unused-vars
-      const _payload = {
-        ...form,
-        timeSlots: selectedSlots,
-        idDocType,
-        latitude:  geoCoords.lat || null,
-        longitude: geoCoords.lng || null,
-      };
-      setLoading(false);
+
+    const payload = {
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      confirmPassword: form.confirmPassword,
+      role: form.role.toUpperCase(),
+      location: form.location,
+      category: form.role === "provider" ? form.category : null,
+      serviceArea: form.role === "provider" ? form.serviceArea : null,
+      timeSlots: form.role === "provider" ? selectedSlots : [],
+      idDocType: form.role === "provider" ? idDocType : null,
+      latitude: geoCoords.lat || null,
+      longitude: geoCoords.lng || null
+    };
+
+    const response = await api.post("/auth/register", payload);
+
+    if (form.role === "provider") {
       setShowSuccess(true);
     } else {
-      // eslint-disable-next-line no-unused-vars
-      const _payload = {
-        ...form,
-        latitude:  geoCoords.lat || null,
-        longitude: geoCoords.lng || null,
-      };
-      setLoading(false);
+      // 👇 Show popup for customer also
       setShowSuccess(true);
     }
-  };
+  } catch (err) {
+  console.error("REGISTER ERROR:", err.response);
+
+  const message =
+    err.response?.data ||
+    err.response?.data?.message ||
+    "Registration failed. Try again.";
+
+  setErrors({ general: message });
+  }finally {
+    setLoading(false);
+  }
+};
+
 
   const handleSuccessClose = () => { setShowSuccess(false); navigate('/login'); };
   const f = (field, val) => { setForm({ ...form, [field]: val }); setErrors({ ...errors, [field]: '' }); };
@@ -252,7 +283,7 @@ export const RegisterPage = () => {
         <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-brand-500/5 rounded-full blur-3xl" />
       </div>
 
-      {showSuccess && <SuccessPopup onClose={handleSuccessClose} />}
+      {showSuccess && <SuccessPopup onClose={handleSuccessClose} role={form.role}  />}
 
       <div className="w-full max-w-lg relative z-10 animate-slide-up py-8">
         {/* Logo */}
@@ -288,6 +319,12 @@ export const RegisterPage = () => {
               </button>
             ))}
           </div>
+            {errors.general && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
+                <p className="text-red-400 text-sm">{errors.general}</p>
+              </div>
+            )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name + Email */}
             <div className="grid grid-cols-2 gap-4">
@@ -346,10 +383,12 @@ export const RegisterPage = () => {
                 </div>
               )}
 
-              {/* Address display — shown only after capture */}
+              {/* Coordinates display — read-only, shown only after capture */}
               {geoStatus === 'success' && (
                 <div>
-                  <label className="text-xs font-medium text-dark-400 mb-1 block">Detected Location</label>
+                  <label className="text-xs font-medium text-dark-400 mb-1 block">
+                    Detected Location
+                  </label>
                   <input
                     type="text"
                     value={geoAddress}
