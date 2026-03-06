@@ -109,13 +109,15 @@ export const PendingProvidersPage = () => {
   fetchPendingProviders();
   }, []);
 
-  const fetchPendingProviders = async () => {
+const fetchPendingProviders = async () => {
     try {
       setLoading(true);
       const res = await api.get("/admin/pending-providers");
-      setProviders(res.data);
+      // Fallback to empty array if data is missing to prevent .filter crash
+      setProviders(Array.isArray(res.data) ? res.data : []); 
     } catch (err) {
       console.error("Error fetching pending providers:", err);
+      setProviders([]);
     } finally {
       setLoading(false);
     }
@@ -449,13 +451,14 @@ export const AdminProvidersPage = () => {
     }, []);
 
     const fetchProviders = async () => {
-      try {
-        const res = await api.get("/admin/services"); 
-        setProviders(res.data);
-      } catch (err) {
-        console.error("Error fetching providers:", err);
-      }
-    };
+    try {
+      const res = await api.get("/admin/services"); 
+      setProviders(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetching providers:", err);
+      setProviders([]);
+    }
+  };
   const approveService = async (id) => {
     try {
       await api.put(`/admin/services/${id}/approve`);

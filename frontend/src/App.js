@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Layout } from './components/common/Layout';
 import { PageLoader } from './components/common/index';
+import 'leaflet/dist/leaflet.css';
 
 // Auth Pages
 import { LoginPage } from './pages/LoginPage';

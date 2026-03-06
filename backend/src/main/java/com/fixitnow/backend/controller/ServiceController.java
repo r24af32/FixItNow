@@ -55,7 +55,7 @@ public class ServiceController {
         service.setStatus("PENDING");
 
         ProviderProfile profile = providerProfileRepository.findByUser(provider)
-        .orElseThrow(() -> new RuntimeException("Provider profile not found"));
+                .orElseThrow(() -> new RuntimeException("Provider profile not found"));
 
         if (!"APPROVED".equals(profile.getApprovalStatus())) {
             throw new RuntimeException("Provider not approved by admin");
@@ -65,10 +65,41 @@ public class ServiceController {
     }
 
     // 🔹 Get all services
+    // @GetMapping
+    // public List<ServiceResponse> getAllServices() {
+    // return serviceRepository.findByStatus("APPROVED")
+    // .stream()
+    // .map(ServiceResponse::new)
+    // .toList();
+    // }
+
     @GetMapping
-    public List<ServiceResponse> getAllServices() {
-        return serviceRepository.findByStatus("APPROVED")
+    public List<ServiceResponse> getAllServices(
+            @RequestParam(required = false) String location) {
+
+        List<ServiceEntity> services;
+
+        if (location != null && !location.trim().isEmpty()) {
+            services = serviceRepository.findApprovedServicesByLocation(location.trim());
+        } else {
+            services = serviceRepository.findByStatus("APPROVED");
+        }
+
+        return services.stream()
+                .map(ServiceResponse::new)
+                .toList();
+    }
+    // ADDED: Endpoint to fetch services based on map clicks/coordinates
+    // ADD THIS EXACTLY AS WRITTEN to enable radius searching!
+    @GetMapping("/nearby")
+    public List<ServiceResponse> getNearbyServices(
+            @RequestParam Double lat,
+            @RequestParam Double lng,
+            @RequestParam(defaultValue = "20.0") Double distance) { // 20km radius
+        
+        return serviceRepository.findServicesNearLocation(lat, lng, distance)
                 .stream()
+                .filter(s -> "APPROVED".equals(s.getStatus()))
                 .map(ServiceResponse::new)
                 .toList();
     }
@@ -89,20 +120,20 @@ public class ServiceController {
     }
     // @PutMapping("/{id}/approve")
     // public ServiceEntity approveService(@PathVariable Long id) {
-    //     ServiceEntity service = serviceRepository.findById(id)
-    //             .orElseThrow(() -> new RuntimeException("Service not found"));
+    // ServiceEntity service = serviceRepository.findById(id)
+    // .orElseThrow(() -> new RuntimeException("Service not found"));
 
-    //     service.setStatus("APPROVED");
-    //     return serviceRepository.save(service);
+    // service.setStatus("APPROVED");
+    // return serviceRepository.save(service);
     // }
 
     // @PutMapping("/{id}/reject")
     // public ServiceEntity rejectService(@PathVariable Long id) {
-    //     ServiceEntity service = serviceRepository.findById(id)
-    //             .orElseThrow(() -> new RuntimeException("Service not found"));
+    // ServiceEntity service = serviceRepository.findById(id)
+    // .orElseThrow(() -> new RuntimeException("Service not found"));
 
-    //     service.setStatus("REJECTED");
-    //     return serviceRepository.save(service);
+    // service.setStatus("REJECTED");
+    // return serviceRepository.save(service);
     // }
     @GetMapping("/provider")
     public List<ServiceResponse> getMyServices(Principal principal) {
@@ -117,6 +148,7 @@ public class ServiceController {
                 .map(ServiceResponse::new)
                 .toList();
     }
+
     @DeleteMapping("/{id}")
     public void deleteService(@PathVariable Long id, Principal principal) {
 
@@ -134,6 +166,7 @@ public class ServiceController {
 
         serviceRepository.delete(service);
     }
+
     @PutMapping("/{id}")
     public ServiceEntity updateService(
             @PathVariable Long id,
@@ -189,7 +222,5 @@ public class ServiceController {
         service.setStatus("REJECTED");
         return serviceRepository.save(service);
     }
-
-
 
 }
