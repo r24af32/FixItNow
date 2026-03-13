@@ -12,7 +12,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.List;
 
 
@@ -30,6 +29,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
+
+        String path = request.getRequestURI();
+        // Keep auth endpoints public even if invalid/expired token is sent.
+        if (path != null && path.startsWith("/api/auth/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String authHeader = request.getHeader("Authorization");
 
@@ -58,8 +64,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 System.out.println("Authenticated user: " + email + " with role: " + role);
 
             } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
+                // Continue request as anonymous for public endpoints.
+                SecurityContextHolder.clearContext();
             }
         }
 

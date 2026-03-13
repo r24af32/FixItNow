@@ -20,31 +20,45 @@ export const LoginPage = () => {
   const navigate = useNavigate();
 
 const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-  try {
-    const response = await api.post('/auth/login', {
-      email: form.email,
-      password: form.password
-    });
+    try {
+      const response = await api.post('/auth/login', {
+        email: form.email,
+        password: form.password
+      });
 
-    const { token, user } = response.data;
+      const { token, user } = response.data;
 
-    // Save to context
-    login(user, token);
+      // Save to context
+      login(user, token);
 
-    // Redirect based on role
-    navigate(`/${user.role}/dashboard`);
-  } catch (err) {
-    setError(
-      err.response?.data?.message || 'Invalid credentials'
-    );
-  }
-
-  setLoading(false);
-};
+      // Redirect based on role
+      navigate(`/${user.role.toLowerCase()}/dashboard`);
+      
+    } catch (err) {
+      // Integration of Yashashri's backend status codes
+      if (err.response) {
+        const status = err.response.status;
+        
+        if (status === 400) {
+          setError("Please provide both email and password.");
+        } else if (status === 401) {
+          setError("Incorrect email or password.");
+        } else if (status === 403) {
+          setError("Your provider account is pending Admin approval.");
+        } else {
+          setError("Server error. Please try again later.");
+        }
+      } else {
+        setError("Network error. Is the backend running?");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fillDemo = (account) => {
     setForm({ email: account.email, password: account.password });

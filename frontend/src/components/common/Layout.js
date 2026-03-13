@@ -31,6 +31,10 @@ const adminLinks = [
   { path: '/admin/pending-providers', icon: Shield, label: 'Pending Approvals' },
   { path: '/admin/disputes', icon: AlertTriangle, label: 'Disputes' },
 ];
+const guestLinks = [
+  { path: '/customer/services', icon: Search, label: 'Find Services' },
+];
+
 
 export const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -40,8 +44,13 @@ export const Layout = ({ children }) => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const role = user?.role || 'customer';
-  const links = role === 'admin' ? adminLinks : role === 'provider' ? providerLinks : customerLinks;
+  const role = user?.role || 'guest';
+  let links = guestLinks; // Default to guest links
+  if (user) {
+    if (role === 'admin') links = adminLinks;
+    else if (role === 'provider') links = providerLinks;
+    else links = customerLinks;
+  }
 
   const handleLogout = () => {
     logout();
@@ -94,24 +103,36 @@ export const Layout = ({ children }) => {
         })}
       </nav>
 
-      {/* User profile at bottom */}
+      {/* Bottom Action Area (Profile or Login) */}
       <div className="p-4 border-t border-dark-700">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-900/50 hover:bg-dark-700 transition-colors">
-          <Avatar name={user?.name || 'User'} size="sm" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white truncate">{user?.name || 'User'}</p>
-            <p className="text-xs text-dark-400 truncate">{user?.email || ''}</p>
+        {user ? (
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-900/50 hover:bg-dark-700 transition-colors">
+            <Avatar name={user.name} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+              <p className="text-xs text-dark-400 truncate">{user.email}</p>
+            </div>
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              className="p-1.5 rounded-lg hover:bg-red-500/20 text-dark-400 hover:text-red-400 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="p-1.5 rounded-lg hover:bg-red-500/20 text-dark-400 hover:text-red-400 transition-colors"
-            title="Logout"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <Link to="/login" className="btn-primary w-full text-center py-2 text-sm">
+              Log In
+            </Link>
+            <Link to="/register" className="w-full text-center py-2 text-sm text-dark-300 hover:text-white transition-colors border border-dark-600 hover:border-dark-400 rounded-xl">
+              Sign Up
+            </Link>
+          </div>
+        )}
       </div>
     </div>
+    
   );
 
   return (
@@ -162,48 +183,54 @@ export const Layout = ({ children }) => {
                 Add Service
               </Link>
             )}
-            {/* Notification bell */}
-            <div className="relative">
-              <button
-                onClick={() => setNotifOpen(!notifOpen)}
-                className="relative p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-white transition-colors"
-              >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
-              </button>
-              {notifOpen && (
-                <div className="absolute right-0 top-12 w-80 bg-dark-800 border border-dark-600 rounded-2xl shadow-2xl z-50 overflow-hidden">
-                  <div className="p-4 border-b border-dark-700">
-                    <h4 className="font-semibold text-white">Notifications</h4>
-                  </div>
-                  <div className="divide-y divide-dark-700">
-                    {[
-                      { icon: '✅', text: 'Booking #1 confirmed by Ravi Kumar', time: '2m ago' },
-                      { icon: '💬', text: 'New message from Suresh Babu', time: '15m ago' },
-                      { icon: '⭐', text: 'Rate your recent service', time: '1h ago' },
-                    ].map((n, i) => (
-                      <div key={i} className="flex items-start gap-3 p-4 hover:bg-dark-700 transition-colors cursor-pointer">
-                        <span className="text-lg">{n.icon}</span>
-                        <div className="flex-1">
-                          <p className="text-sm text-dark-200">{n.text}</p>
-                          <p className="text-xs text-dark-500 mt-0.5">{n.time}</p>
-                        </div>
+            
+            {/* User-only Header Actions (Hidden for Guests) */}
+            {user && (
+              <>
+                {/* Notification bell */}
+                <div className="relative">
+                  <button
+                    onClick={() => setNotifOpen(!notifOpen)}
+                    className="relative p-2 rounded-xl hover:bg-dark-700 text-dark-400 hover:text-white transition-colors"
+                  >
+                    <Bell className="w-5 h-5" />
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
+                  </button>
+                  {notifOpen && (
+                    <div className="absolute right-0 top-12 w-80 bg-dark-800 border border-dark-600 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                      <div className="p-4 border-b border-dark-700">
+                        <h4 className="font-semibold text-white">Notifications</h4>
                       </div>
-                    ))}
-                  </div>
-                  <div className="p-3 border-t border-dark-700">
-                    <button className="w-full text-center text-sm text-brand-400 hover:text-brand-300 py-1">
-                      View all notifications
-                    </button>
-                  </div>
+                      <div className="divide-y divide-dark-700">
+                        {[
+                          { icon: '✅', text: 'Booking #1 confirmed by Ravi Kumar', time: '2m ago' },
+                          { icon: '💬', text: 'New message from Suresh Babu', time: '15m ago' },
+                          { icon: '⭐', text: 'Rate your recent service', time: '1h ago' },
+                        ].map((n, i) => (
+                          <div key={i} className="flex items-start gap-3 p-4 hover:bg-dark-700 transition-colors cursor-pointer">
+                            <span className="text-lg">{n.icon}</span>
+                            <div className="flex-1">
+                              <p className="text-sm text-dark-200">{n.text}</p>
+                              <p className="text-xs text-dark-500 mt-0.5">{n.time}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="p-3 border-t border-dark-700">
+                        <button className="w-full text-center text-sm text-brand-400 hover:text-brand-300 py-1">
+                          View all notifications
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Avatar */}
-            <div className="hidden sm:block">
-              <Avatar name={user?.name || 'User'} size="sm" />
-            </div>
+                {/* Avatar */}
+                <div className="hidden sm:block">
+                  <Avatar name={user.name} size="sm" />
+                </div>
+              </>
+            )}
           </div>
         </header>
 

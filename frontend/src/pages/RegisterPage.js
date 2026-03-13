@@ -260,17 +260,26 @@ const handleSubmit = async (e) => {
       setShowSuccess(true);
     }
   } catch (err) {
-  console.error("REGISTER ERROR:", err.response);
+      console.error("REGISTER ERROR:", err.response);
 
-  const message =
-    err.response?.data ||
-    err.response?.data?.message ||
-    "Registration failed. Try again.";
-
-  setErrors({ general: message });
-  }finally {
-    setLoading(false);
-  }
+      if (err.response) {
+        const status = err.response.status;
+        
+        // Catch the specific 400 error 
+        if (status === 400) {
+          setErrors({ general: "Invalid registration data. Please check your inputs or role." });
+        } else {
+          // Fallback for other errors
+          const message = err.response.data?.message || 
+                          (typeof err.response.data === 'string' ? err.response.data : "Registration failed. Try again.");
+          setErrors({ general: message });
+        }
+      } else {
+        setErrors({ general: "Network error. Is the backend running?" });
+      }
+    } finally {
+      setLoading(false);
+    }
 };
 
 
