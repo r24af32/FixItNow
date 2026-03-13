@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Star, X, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import 'leaflet/dist/leaflet.css';
 
 // ─── StarRating ─────────────────────────────────────────────────────────────
 export const StarRating = ({ rating, max = 5, size = 'sm', interactive = false, onChange }) => {

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Layout } from './components/common/Layout';
 import { PageLoader } from './components/common/index';
+import 'leaflet/dist/leaflet.css';
 
 // Auth Pages
 import { LoginPage } from './pages/LoginPage';
@@ -23,6 +24,7 @@ import { ProviderServicesPage, ProviderBookingsPage } from './pages/provider/Pro
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsersPage, AdminProvidersPage, AdminDisputesPage, PendingProvidersPage } from './pages/admin/AdminPages';
+
 
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();

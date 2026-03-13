@@ -7,7 +7,7 @@ import { api } from '../utils/api';
 const DEMO_ACCOUNTS = [
   { role: 'customer', email: 'customer@demo.com', password: 'demo123', name: 'Priya Nair' },
   { role: 'provider', email: 'provider@demo.com', password: 'demo123', name: 'Ravi Kumar' },
-  { role: 'admin',    email: 'admin@demo.com',    password: 'demo123', name: 'Admin User' },
+  
 ];
 
 
@@ -150,7 +150,7 @@ const handleSubmit = async (e) => {
           <p className="text-xs font-mono uppercase tracking-wider text-dark-400 text-center mb-3">
             ✨ Quick Demo Access
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {DEMO_ACCOUNTS.map(acc => (
               <button
                 key={acc.role}

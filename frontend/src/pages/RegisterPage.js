@@ -19,7 +19,7 @@ const MAX_FILE_SIZE_MB = 5;
 const ACCEPTED_MIME = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
 
 // ─── Success Popup ────────────────────────────────────────────────────────────
-const SuccessPopup = ({ onClose }) => (
+const SuccessPopup = ({ onClose, role }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
     <div className="relative bg-dark-800 border border-dark-600 rounded-2xl w-full max-w-md animate-slide-up shadow-2xl p-8 text-center">
@@ -36,15 +36,25 @@ const SuccessPopup = ({ onClose }) => (
         <div className="absolute inset-0 rounded-full border-2 border-green-400 animate-ping opacity-20" />
       </div>
       <h3 className="font-display font-bold text-xl text-white mb-3">
-        Profile Submitted Successfully!
-      </h3>
-      <p className="text-dark-300 text-sm leading-relaxed mb-6">
-        Your profile has been submitted successfully and is under admin verification. You will be notified once approved.
-      </p>
+  {role === "provider"
+    ? "Profile Submitted Successfully!"
+    : "Account Created Successfully!"}
+    </h3>
+
+    <p className="text-dark-300 text-sm leading-relaxed mb-6">
+      {role === "provider"
+        ? "Your profile has been submitted successfully and is under admin verification. You will be notified once approved."
+        : "Your account has been created successfully. You can now login."}
+    </p>
+
+    {role === "provider" && (
       <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
         <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0" />
-        <span className="text-yellow-400 text-sm font-medium">Status: Pending Admin Approval</span>
+        <span className="text-yellow-400 text-sm font-medium">
+          Status: Pending Admin Approval
+        </span>
       </div>
+    )}
       <button onClick={onClose} className="btn-primary w-full">
         Got It, Thanks!
       </button>
@@ -95,6 +105,7 @@ export const RegisterPage = () => {
   const [geoStatus, setGeoStatus]         = useState('idle'); // 'idle' | 'loading' | 'success' | 'denied'
   const { login } = useAuth();
   const navigate  = useNavigate();
+  const [geoAddress, setGeoAddress] = useState('');
 
   // ── Reset form completely when component mounts ──────────────────────────────
   useEffect(() => {
@@ -146,26 +157,56 @@ export const RegisterPage = () => {
 
   // ── Geolocation capture ──────────────────────────────────────────────────────
   const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      setGeoStatus('denied');
-      return;
-    }
-    setGeoStatus('loading');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGeoCoords({
-          lat: pos.coords.latitude.toFixed(6),
-          lng: pos.coords.longitude.toFixed(6),
-        });
-        setGeoStatus('success');
-      },
-      () => {
-        setGeoStatus('denied');
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
+  if (!navigator.geolocation) {
+    setGeoStatus('denied');
+    return;
+  }
 
+  setGeoStatus('loading');
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+
+      setGeoCoords({ lat, lng });
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+
+        const data = await res.json();
+        const a = data.address || {};
+
+        const parts = [
+          a.neighbourhood || a.suburb || a.village || a.town,
+          a.city || a.county,
+          a.state,
+        ].filter(Boolean);
+
+        const addr = parts.join(', ') || data.display_name || `${lat}, ${lng}`;
+
+        setGeoAddress(addr);
+
+        // 🔥 Auto-fill location field
+        setForm(prev => ({ ...prev, location: addr }));
+        setErrors(prev => ({ ...prev, location: '' }));
+
+      } catch {
+        setGeoAddress(`${lat}, ${lng}`);
+        setForm(prev => ({ ...prev, location: `${lat}, ${lng}` }));
+      }
+
+      setGeoStatus('success');
+    },
+    () => {
+      setGeoStatus('denied');
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+};
   // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
@@ -215,9 +256,9 @@ const handleSubmit = async (e) => {
     if (form.role === "provider") {
       setShowSuccess(true);
     } else {
-      navigate("/login");
+      // 👇 Show popup for customer also
+      setShowSuccess(true);
     }
-
   } catch (err) {
   console.error("REGISTER ERROR:", err.response);
 
@@ -242,7 +283,7 @@ const handleSubmit = async (e) => {
         <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-brand-500/5 rounded-full blur-3xl" />
       </div>
 
-      {showSuccess && <SuccessPopup onClose={handleSuccessClose} />}
+      {showSuccess && <SuccessPopup onClose={handleSuccessClose} role={form.role}  />}
 
       <div className="w-full max-w-lg relative z-10 animate-slide-up py-8">
         {/* Logo */}
@@ -344,25 +385,16 @@ const handleSubmit = async (e) => {
 
               {/* Coordinates display — read-only, shown only after capture */}
               {geoStatus === 'success' && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-dark-400 mb-1 block">Latitude</label>
-                    <input
-                      type="text"
-                      value={geoCoords.lat}
-                      readOnly
-                      className="input-field text-sm text-dark-300 bg-dark-800 cursor-default"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-dark-400 mb-1 block">Longitude</label>
-                    <input
-                      type="text"
-                      value={geoCoords.lng}
-                      readOnly
-                      className="input-field text-sm text-dark-300 bg-dark-800 cursor-default"
-                    />
-                  </div>
+                <div>
+                  <label className="text-xs font-medium text-dark-400 mb-1 block">
+                    Detected Location
+                  </label>
+                  <input
+                    type="text"
+                    value={geoAddress}
+                    readOnly
+                    className="input-field text-sm text-dark-300 bg-dark-800 cursor-default"
+                  />
                 </div>
               )}
             </div>

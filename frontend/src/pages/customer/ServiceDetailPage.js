@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Star, Shield, Clock, CheckCircle, Calendar, MessageCircle } from 'lucide-react';
-import { MOCK_SERVICES } from '../../utils/api';
+import { useEffect } from 'react';
 import { StarRating, Modal } from '../../components/common/index';
+import { api, SERVICE_CATEGORIES } from '../../utils/api';
 
 const TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
 const REVIEWS = [
@@ -14,7 +15,20 @@ const REVIEWS = [
 export const ServiceDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const service = MOCK_SERVICES.find(s => s.id === Number(id)) || MOCK_SERVICES[0];
+  const [service, setService] = useState(null);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  api.get(`/services/${id}`)
+    .then(res => {
+      setService(res.data);
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+}, [id]);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
   const [notes, setNotes] = useState('');
@@ -35,6 +49,22 @@ export const ServiceDetailPage = () => {
   const maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 30);
 
+    if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-white text-lg">Loading service...</p>
+      </div>
+    );
+  }
+
+  if (!service) {
+    return (
+      <div className="text-center py-20 text-red-400">
+        Service not found.
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       {/* Back button */}
@@ -50,7 +80,7 @@ export const ServiceDetailPage = () => {
           <div className="bg-dark-800 border border-dark-700 rounded-2xl p-6">
             <div className="flex items-start gap-5">
               <div className="w-20 h-20 bg-dark-700 rounded-2xl flex items-center justify-center text-4xl flex-shrink-0">
-                {service.image}
+                {service.image || "🔧"}
               </div>
               <div className="flex-1">
                 <div className="flex items-start justify-between flex-wrap gap-2">
@@ -91,8 +121,8 @@ export const ServiceDetailPage = () => {
                   👤
                 </div>
                 <div>
-                  <p className="font-semibold text-white text-lg">{service.provider}</p>
-                  <p className="text-dark-400 text-sm flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{service.location}</p>
+                  <p className="font-semibold text-white text-lg">{service.providerName}</p>
+                  <p className="text-dark-400 text-sm flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{service.providerLocation}</p>
                   <p className="text-dark-500 text-xs mt-0.5">Member since 2021</p>
                 </div>
               </div>
@@ -231,7 +261,7 @@ export const ServiceDetailPage = () => {
             <div className="bg-dark-900/50 rounded-xl p-4 space-y-3">
               {[
                 { label: 'Service', value: service.category },
-                { label: 'Provider', value: service.provider },
+                { label: 'Provider', value: service.providerName },
                 { label: 'Date', value: selectedDate },
                 { label: 'Time', value: selectedSlot },
                 { label: 'Amount', value: `₹${service.price}` },

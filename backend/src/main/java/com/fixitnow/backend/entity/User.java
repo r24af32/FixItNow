@@ -2,6 +2,9 @@ package com.fixitnow.backend.entity;
 
 import jakarta.persistence.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fixitnow.backend.entity.ProviderProfile;
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -22,7 +25,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-
+    @JsonIgnore
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private ProviderProfile providerProfile;
 
     public Long getId() {
         return id;
@@ -66,5 +71,9 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public ProviderProfile getProviderProfile() {
+        return providerProfile;
     }
 }
