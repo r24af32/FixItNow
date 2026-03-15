@@ -23,6 +23,10 @@ import { ProviderServicesPage, ProviderBookingsPage } from './pages/provider/Pro
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsersPage, AdminProvidersPage, AdminDisputesPage, PendingProvidersPage } from './pages/admin/AdminPages';
+import "leaflet/dist/leaflet.css";
+
+import { PaymentPage } from "./pages/customer/PaymentPage";
+// import "leaflet/dist/leaflet.css";
 
 
 const ProtectedRoute = ({ children, requiredRole }) => {

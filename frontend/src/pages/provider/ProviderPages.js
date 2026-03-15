@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Plus, Edit3, Trash2, Eye, Calendar, Clock, MessageCircle } from 'lucide-react';
-import { MOCK_SERVICES, MOCK_PROVIDER_BOOKINGS, SERVICE_CATEGORIES } from '../../utils/api';
+// import { MOCK_SERVICES, MOCK_PROVIDER_BOOKINGS, SERVICE_CATEGORIES } from '../../utils/api';
+import { api, MOCK_SERVICES, SERVICE_CATEGORIES } from '../../utils/api';
 import { Modal, SectionHeader, StatusBadge } from '../../components/common/index';
 
 // ─── Provider My Services Page ───────────────────────────────────────────────
@@ -10,6 +11,28 @@ export const ProviderServicesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [services, setServices] = useState(MOCK_SERVICES.slice(0, 3));
   const [form, setForm] = useState({ category: '', subcategory: '', description: '', price: '', availability: '' });
+  const [editingId, setEditingId] = useState(null);
+
+  const fetchMyServices = async () => {
+    try {
+      const res = await api.get("/services/my");
+      setServices(res.data);
+    } catch (err) {
+      console.error("Failed to fetch services:", err);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+    setForm({
+      category: "",
+      subcategory: "",
+      description: "",
+      price: "",
+      availability: ""
+    });
+  };
 
   const handleAddService = () => {
     if (!form.category || !form.price) return;
@@ -43,7 +66,7 @@ export const ProviderServicesPage = () => {
       }
 
       fetchMyServices();
-      handleCloseModal();   // 🔥 THIS LINE FIXES EVERYTHING
+      handleCloseModal();
     } catch (err) {
       console.error("Save failed:", err);
     }

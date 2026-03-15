@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Star, Shield, Clock, CheckCircle, Calendar, MessageCircle } from 'lucide-react';
 import { useEffect } from 'react';
 import { StarRating, Modal } from '../../components/common/index';
-import { api, SERVICE_CATEGORIES } from '../../utils/api';
+import { api, SERVICE_CATEGORIES, MOCK_SERVICES } from '../../utils/api';
 
 const TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
 const REVIEWS = [
@@ -21,6 +21,7 @@ export const ServiceDetailPage = () => {
   const [notes, setNotes] = useState('');
   const [bookingModal, setBookingModal] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleBook = () => {
     if (!selectedDate || !selectedSlot) return;
