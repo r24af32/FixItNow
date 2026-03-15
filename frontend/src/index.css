@@ -184,3 +184,23 @@ body {
 .page-enter {
   animation: fadeIn 0.4s ease-out, slideUp 0.4s ease-out;
 }
+
+/* Booking highlight flash animation */
+@keyframes bookingFlash {
+  0% {
+    box-shadow: 0 0 0px rgba(249,115,22,0);
+    background-color: rgba(249,115,22,0);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(249,115,22,0.8);
+    background-color: rgba(249,115,22,0.08);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(249,115,22,0);
+    background-color: rgba(249,115,22,0);
+  }
+}
+
+.flash-booking {
+  animation: bookingFlash 0.9s ease;
+}

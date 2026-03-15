@@ -16,7 +16,7 @@ export const ServiceDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [service, setService] = useState(null);
-const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
 useEffect(() => {
   api.get(`/services/${id}`)
@@ -40,9 +40,46 @@ useEffect(() => {
     setBookingModal(true);
   };
 
+  // const confirmBooking = () => {
+  //   setConfirmed(true);
+  //   setTimeout(() => navigate('/customer/bookings'), 2000);
+  // };
+
   const confirmBooking = () => {
+    const bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+
+    const newBooking = {
+      id: Date.now(),
+      service: service.category,
+      provider: service.providerName,
+      date: selectedDate,
+      timeSlot: selectedSlot,
+      price: service.price,
+      status: "pending",
+      requestTime: Date.now(),
+      message: "Your request is pending. Waiting for provider approval"
+    };
+
+    bookings.push(newBooking);
+    localStorage.setItem("bookings", JSON.stringify(bookings));
+    const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+
+    notifications.unshift({
+      id: Date.now(),
+      bookingId: newBooking.id,
+      role: "provider",
+      icon: "📅",
+      text: `New booking request for ${newBooking.service}`,
+      viewed: false,
+      createdAt: Date.now(),
+    });
+
+    localStorage.setItem("notifications", JSON.stringify(notifications));
     setConfirmed(true);
-    setTimeout(() => navigate('/customer/bookings'), 2000);
+
+    setTimeout(() => {
+      navigate("/customer/bookings");
+    }, 1500);
   };
 
   const today = new Date().toISOString().split('T')[0];

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, Star, MessageCircle, X } from 'lucide-react';
-import { MOCK_BOOKINGS, MOCK_SERVICES } from '../../utils/api';
+// import { MOCK_BOOKINGS, MOCK_SERVICES } from '../../utils/api';
+import { MOCK_SERVICES } from '../../utils/api';
 import { StatusBadge, StarRating, Modal, EmptyState, SectionHeader } from '../../components/common/index';
 
 export const CustomerBookingsPage = () => {
@@ -19,7 +20,15 @@ export const CustomerBookingsPage = () => {
     { id: 'cancelled', label: 'Cancelled' },
   ];
 
-  const filtered = activeTab === 'all' ? MOCK_BOOKINGS : MOCK_BOOKINGS.filter(b => b.status === activeTab);
+  // const filtered = activeTab === 'all' ? MOCK_BOOKINGS : MOCK_BOOKINGS.filter(b => b.status === activeTab);
+  const [bookings, setBookings] = useState(() => {
+    return JSON.parse(localStorage.getItem("bookings")) || [];
+  });
+
+  const filtered =
+    activeTab === "all"
+      ? bookings
+      : bookings.filter((b) => b.status === activeTab);
 
   const submitReview = () => {
     if (!rating) return;
@@ -28,6 +37,37 @@ export const CustomerBookingsPage = () => {
     setRating(0);
     setReviewText('');
   };
+
+  const cancelBooking = (id) => {
+    const updated = bookings.map((b) =>
+      b.id === id ? { ...b, status: "cancelled" } : b
+    );
+
+    setBookings(updated);
+    localStorage.setItem("bookings", JSON.stringify(updated));
+  };
+
+  useEffect(() => {
+    const now = Date.now();
+    const updated = bookings.map(b => {
+
+      if (b.status === "pending") {
+        const diff = now - b.requestTime;
+
+        if (diff > 48 * 60 * 60 * 1000) {
+          return {
+            ...b,
+            status: "cancelled",
+            message: "Provider did not respond within 48 hours"
+          };
+        }
+      }
+      return b;
+    });
+
+    setBookings(updated);
+    localStorage.setItem("bookings", JSON.stringify(updated));
+  }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -50,7 +90,8 @@ export const CustomerBookingsPage = () => {
               <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${
                 activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-dark-700 text-dark-400'
               }`}>
-                {MOCK_BOOKINGS.filter(b => b.status === tab.id).length}
+                {/* {MOCK_BOOKINGS.filter(b => b.status === tab.id).length} */}
+                {bookings.filter(b => b.status === tab.id).length}
               </span>
             )}
           </button>
@@ -68,7 +109,11 @@ export const CustomerBookingsPage = () => {
       ) : (
         <div className="space-y-4">
           {filtered.map(booking => {
-            const service = MOCK_SERVICES.find(s => s.category === booking.service.split(' ')[0]) || MOCK_SERVICES[0];
+            // const service = MOCK_SERVICES.find(s => s.category === booking.service.split(' ')[0]) || MOCK_SERVICES[0];
+            const service =
+              MOCK_SERVICES.find(
+                (s) => booking.service?.toLowerCase().includes(s.category.toLowerCase())
+              ) || { image: "🔧" };
             return (
               <div key={booking.id} className="bg-dark-800 border border-dark-700 rounded-2xl p-5 hover:border-dark-600 transition-all">
                 <div className="flex items-start gap-4">
@@ -80,6 +125,12 @@ export const CustomerBookingsPage = () => {
                       <div>
                         <h4 className="font-display font-semibold text-white">{booking.service}</h4>
                         <p className="text-dark-400 text-sm">{booking.provider}</p>
+
+                        {booking.status === "pending" && (
+                          <p className="text-yellow-400 text-xs mt-1">
+                            Your request is pending. Provider will respond within 48 hours.
+                          </p>
+                        )}
                       </div>
                       <StatusBadge status={booking.status} />
                     </div>
@@ -110,16 +161,45 @@ export const CustomerBookingsPage = () => {
                         ✓ Review submitted
                       </span>
                     )}
-                    {(booking.status === 'pending' || booking.status === 'confirmed') && (
-                      <>
-                        <Link to="/customer/chat" className="flex items-center gap-1.5 btn-secondary py-2 text-sm">
-                          <MessageCircle className="w-4 h-4" /> Chat
-                        </Link>
-                        <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium">
+                    {/* BOOKING ACTION BUTTONS */}
+                    <>
+                      {/*Pending booking → only Cancel */}
+                      {booking.status === "pending" && (
+                        <button
+                          onClick={() => cancelBooking(booking.id)}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium"
+                        >
                           <X className="w-4 h-4" /> Cancel
                         </button>
-                      </>
-                    )}
+                      )}
+
+                      {/* Confirmed booking */}
+                      {booking.status === "confirmed" && (
+                        <>
+                          <Link
+                            to="/customer/chat"
+                            className="flex items-center gap-1.5 btn-secondary py-2 text-sm"
+                          >
+                            <MessageCircle className="w-4 h-4" /> Chat
+                          </Link>
+
+                          <button
+                            onClick={() => cancelBooking(booking.id)}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium"
+                          >
+                            <X className="w-4 h-4" /> Cancel
+                          </button>
+
+                          <Link
+                            to="/customer/payment"
+                            state={booking}
+                            className="btn-primary py-2 text-sm"
+                          >
+                            Pay Now
+                          </Link>
+                        </>
+                      )}
+                    </>
                   </div>
                 </div>
               </div>

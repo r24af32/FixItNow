@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Layout } from './components/common/Layout';
 import { PageLoader } from './components/common/index';
 import 'leaflet/dist/leaflet.css';
+import { PaymentPage } from "./pages/customer/PaymentPage";
 
 // Auth Pages
 import { LoginPage } from './pages/LoginPage';
@@ -71,6 +72,7 @@ const AppRoutes = () => (
     <Route path="/customer/bookings" element={<ProtectedRoute requiredRole="customer"><CustomerBookingsPage /></ProtectedRoute>} />
     <Route path="/customer/chat" element={<ProtectedRoute requiredRole="customer"><ChatPage /></ProtectedRoute>} />
     <Route path="/customer/settings" element={<ProtectedRoute requiredRole="customer"><SettingsPage /></ProtectedRoute>} />
+    <Route path="/customer/payment" element={<ProtectedRoute requiredRole="customer"><PaymentPage /></ProtectedRoute>} />
 
     {/* Provider Routes */}
     <Route path="/provider/dashboard" element={<ProtectedRoute requiredRole="provider"><ProviderDashboard /></ProtectedRoute>} />

@@ -31,10 +31,15 @@ export const StatusBadge = ({ status }) => {
     pending:   { cls: 'status-pending',   label: 'Pending' },
     confirmed: { cls: 'status-confirmed', label: 'Confirmed' },
     completed: { cls: 'status-completed', label: 'Completed' },
+    // completed: { cls: 'status-completed', label: 'Payment Successful! Your Booking is Confirmed' },
+  
     cancelled: { cls: 'status-cancelled', label: 'Cancelled' },
+    // cancelled: { cls: 'status-cancelled', label: 'Payment Failed! Your Booking is Cancelled' },
     verified:  { cls: 'badge bg-green-500/20 text-green-400 border border-green-500/30', label: 'Verified' },
     unverified:{ cls: 'badge bg-dark-600 text-dark-300 border border-dark-500', label: 'Unverified' },
-    approved:  { cls: 'badge bg-green-500/20 text-green-400 border border-green-500/30', label: 'Approved' },
+
+    // approved:  { cls: 'badge bg-green-500/20 text-green-400 border border-green-500/30', label: 'Approved' },
+    approved:  { cls: 'status-confirmed', label: 'Provider Approved - Pay Now' },
     rejected:  { cls: 'badge bg-red-500/20 text-red-400 border border-red-500/30', label: 'Rejected' },
   };
   const { cls, label } = map[status] || { cls: 'badge bg-dark-700 text-dark-300', label: status };
