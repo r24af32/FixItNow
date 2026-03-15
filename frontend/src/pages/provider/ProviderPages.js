@@ -1,99 +1,68 @@
-import React, { useState, useRef  } from "react";
-import { Link, useLocation  } from "react-router-dom";
-import { Plus, Edit3, Trash2, Eye, Calendar, Clock, MessageCircle, } from "lucide-react";
-import { MOCK_SERVICES, MOCK_PROVIDER_BOOKINGS, SERVICE_CATEGORIES, } from "../../utils/api";
-import { Modal, SectionHeader, StatusBadge, } from "../../components/common/index";
-import { api } from "../../utils/api";
-import { useEffect } from "react";
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus, Edit3, Trash2, Eye, Calendar, Clock, MessageCircle } from 'lucide-react';
+import { MOCK_SERVICES, MOCK_PROVIDER_BOOKINGS, SERVICE_CATEGORIES } from '../../utils/api';
+import { Modal, SectionHeader, StatusBadge } from '../../components/common/index';
 
 // ─── Provider My Services Page ───────────────────────────────────────────────
 export const ProviderServicesPage = () => {
   const [selectedService, setSelectedService] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [services, setServices] = useState([]);
-  const [form, setForm] = useState({
-    category: "",
-    subcategory: "",
-    description: "",
-    price: "",
-    availability: "",
-  });
+  const [services, setServices] = useState(MOCK_SERVICES.slice(0, 3));
+  const [form, setForm] = useState({ category: '', subcategory: '', description: '', price: '', availability: '' });
 
-  useEffect(() => {
-    fetchMyServices();
-  }, []);
-
-  const fetchMyServices = async () => {
-    try {
-      const res = await api.get("/services/provider");
-      // Since backend returns all approved services,
-      // we filter by logged-in provider later if needed.
-      setServices(res.data);
-    } catch (err) {
-      console.error("Failed to load services", err);
-    }
-  };
-  const handleCloseModal = () => {
+  const handleAddService = () => {
+    if (!form.category || !form.price) return;
+    setServices([...services, {
+      id: Date.now(),
+      ...form,
+      provider: 'You',
+      rating: 0,
+      reviews: 0,
+      price: Number(form.price),
+      verified: false,
+      completedJobs: 0,
+      distance: '-',
+      image: SERVICE_CATEGORIES.find(c => c.name === form.category)?.icon || '🔧'
+    }]);
     setShowModal(false);
-    setEditingId(null);
-    setForm({
-      category: "",
-      subcategory: "",
-      description: "",
-      price: "",
-      availability: "",
-    });
+    setForm({ category: '', subcategory: '', description: '', price: '', availability: '' });
   };
-  const handleSaveService = async () => {
+    const handleSaveService = async () => {
     try {
       if (editingId) {
         await api.put(`/services/${editingId}`, {
           ...form,
-          price: Number(form.price),
+          price: Number(form.price)
         });
       } else {
-        await api.post("/services", {
+        await api.post('/services', {
           ...form,
-          price: Number(form.price),
+          price: Number(form.price)
         });
       }
 
       fetchMyServices();
-      handleCloseModal();
+      handleCloseModal();   // 🔥 THIS LINE FIXES EVERYTHING
     } catch (err) {
       console.error("Save failed:", err);
     }
   };
   const handleDelete = async (id) => {
-    try {
-      await api.delete(`/services/${id}`);
-      fetchMyServices(); // reload from backend
-    } catch (err) {
-      console.error("Delete failed:", err);
-    }
+  try {
+    await api.delete(`/services/${id}`);
+    fetchMyServices();  // reload from backend
+  } catch (err) {
+    console.error("Delete failed:", err);
+  }
   };
-
   return (
     <div className="space-y-6 animate-fade-in">
       <SectionHeader
         title="My Services"
         subtitle={`${services.length} services listed`}
         action={
-          <button
-            onClick={() => {
-              setEditingId(null);
-              setForm({
-                category: "",
-                subcategory: "",
-                description: "",
-                price: "",
-                availability: "",
-              });
-              setShowModal(true);
-            }}
-            className="btn-primary flex items-center gap-2 py-2 text-sm"
-          >
+          <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2 py-2 text-sm">
             <Plus className="w-4 h-4" /> Add Service
           </button>
         }
@@ -110,27 +79,10 @@ export const ProviderServicesPage = () => {
                 {service.image}
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setSelectedService(service)}
-                  className="p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-white transition-colors"
-                >
+                <button className="p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-white transition-colors">
                   <Eye className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => {
-                    setEditingId(null);
-                    setForm({
-                      category: service.category,
-                      subcategory: service.subcategory,
-                      description: service.description,
-                      price: service.price,
-                      availability: service.availability,
-                    });
-                    setEditingId(service.id);
-                    setShowModal(true);
-                  }}
-                  className="p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-blue-400 transition-colors"
-                >
+                <button className="p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-blue-400 transition-colors">
                   <Edit3 className="w-4 h-4" />
                 </button>
                 <button
@@ -148,27 +100,13 @@ export const ProviderServicesPage = () => {
               {service.subcategory || "General"}
             </p>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-dark-700">
-              <p className="font-bold text-brand-400 text-lg">
-                ₹{service.price}
-              </p>
+              <p className="font-bold text-brand-400 text-lg">₹{service.price}</p>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-dark-400">
-                  {service.completedJobs} jobs
-                </span>
-
-                {service.status === "APPROVED" ? (
-                  <span className="badge bg-green-500/20 text-green-400 border border-green-500/30 text-[10px]">
-                    Verified
-                  </span>
-                ) : service.status === "SUSPENDED" ? (
-                  <span className="badge bg-red-500/20 text-red-400 border border-red-500/30 text-[10px]">
-                    Suspended
-                  </span>
-                ) : (
-                  <span className="badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[10px]">
-                    Pending
-                  </span>
-                )}
+                <span className="text-xs text-dark-400">{service.completedJobs} jobs</span>
+                {service.verified
+                  ? <span className="badge bg-green-500/20 text-green-400 border border-green-500/30 text-[10px]">Verified</span>
+                  : <span className="badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[10px]">Pending</span>
+                }
               </div>
             </div>
           </div>
@@ -183,12 +121,7 @@ export const ProviderServicesPage = () => {
         </button>
       </div>
 
-      <Modal
-        isOpen={showModal}
-        onClose={handleCloseModal}
-        title={editingId ? "Update Service" : "Add New Service"}
-        size="md"
-      >
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add New Service" size="md">
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-dark-300 mb-1.5 block">
@@ -276,14 +209,27 @@ export const ProviderServicesPage = () => {
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button onClick={handleCloseModal} className="btn-secondary flex-1">
-              Cancel
-            </button>
-            <button onClick={handleSaveService} className="btn-primary flex-1">
-              {editingId ? "Update Service" : "Add Service"}
-            </button>
+            <button onClick={() => setShowModal(false)} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={handleAddService} className="btn-primary flex-1">Add Service</button>
           </div>
         </div>
+        
+      </Modal>
+      <Modal
+        isOpen={!!selectedService}
+        onClose={() => setSelectedService(null)}
+        title="Service Details"
+        size="sm"
+      >
+        {selectedService && (
+          <div className="space-y-2">
+            <p><strong>Category:</strong> {selectedService.category}</p>
+            <p><strong>Subcategory:</strong> {selectedService.subcategory}</p>
+            <p><strong>Description:</strong> {selectedService.description}</p>
+            <p><strong>Price:</strong> ₹{selectedService.price}</p>
+            <p><strong>Status:</strong> {selectedService.status}</p>
+          </div>
+        )}
       </Modal>
       <Modal
         isOpen={!!selectedService}

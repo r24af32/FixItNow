@@ -15,20 +15,7 @@ const REVIEWS = [
 export const ServiceDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [service, setService] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-useEffect(() => {
-  api.get(`/services/${id}`)
-    .then(res => {
-      setService(res.data);
-      setLoading(false);
-    })
-    .catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
-}, [id]);
+  const service = MOCK_SERVICES.find(s => s.id === Number(id)) || MOCK_SERVICES[0];
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
   const [notes, setNotes] = useState('');
