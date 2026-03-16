@@ -16,6 +16,7 @@ import { ServiceDetailPage } from './pages/customer/ServiceDetailPage';
 import { CustomerBookingsPage } from './pages/customer/BookingsPage';
 import { ChatPage } from './pages/customer/ChatPage';
 import { SettingsPage } from './pages/customer/SettingsPage';
+import { PaymentPage } from "./pages/customer/PaymentPage";
 
 // Provider Pages
 import { ProviderDashboard } from './pages/provider/ProviderDashboard';
@@ -73,6 +74,7 @@ const AppRoutes = () => (
     <Route path="/customer/bookings" element={<ProtectedRoute requiredRole="customer"><CustomerBookingsPage /></ProtectedRoute>} />
     <Route path="/customer/chat" element={<ProtectedRoute requiredRole="customer"><ChatPage /></ProtectedRoute>} />
     <Route path="/customer/settings" element={<ProtectedRoute requiredRole="customer"><SettingsPage /></ProtectedRoute>} />
+    <Route path="/customer/payment" element={<ProtectedRoute requiredRole="customer"><PaymentPage /></ProtectedRoute>} />
 
     {/* Provider Routes */}
     <Route path="/provider/dashboard" element={<ProtectedRoute requiredRole="provider"><ProviderDashboard /></ProtectedRoute>} />

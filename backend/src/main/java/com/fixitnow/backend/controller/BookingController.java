@@ -1,9 +1,20 @@
 package com.fixitnow.backend.controller;
 
+import java.security.Principal;
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-import com.fixitnow.backend.entity.Booking;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fixitnow.backend.dto.BookingCreateRequest;
+import com.fixitnow.backend.dto.BookingResponse;
 import com.fixitnow.backend.service.BookingService;
 
 @RestController
@@ -14,51 +25,38 @@ public class BookingController {
     @Autowired
     private BookingService bookingService;
 
-    @PostMapping("/create")
-    public Booking createBooking(@RequestBody Booking booking){
-        return bookingService.createBooking(booking);
+    @PostMapping
+    public BookingResponse createBooking(@RequestBody BookingCreateRequest request, Principal principal) {
+        return bookingService.createBooking(request, principal);
     }
 
-    @GetMapping("/all")
-    public List<Booking> getAllBookings(){
-        return bookingService.getAllBookings();
+    @GetMapping("/customer")
+    public List<BookingResponse> getCustomerBookings(Principal principal) {
+        return bookingService.getCustomerBookings(principal);
     }
 
-    @GetMapping("/{id}")
-    public Booking getBookingById(@PathVariable Long id){
-        return bookingService.getBookingById(id);
+    @PutMapping("/{id}/cancel")
+    public BookingResponse cancelBooking(@PathVariable Long id, Principal principal) {
+        return bookingService.cancelBooking(id, principal);
     }
 
-    @GetMapping("/customer/{customerId}")
-    public List<Booking> getCustomerBookings(@PathVariable Long customerId) {
-        return bookingService.getBookingsByCustomer(customerId);
+    @GetMapping("/provider")
+    public List<BookingResponse> getProviderBookings(Principal principal) {
+        return bookingService.getProviderBookings(principal);
     }
 
-    @GetMapping("/provider/{providerId}")
-    public List<Booking> getProviderBookings(@PathVariable Long providerId) {
-        return bookingService.getBookingsByProvider(providerId);
+    @PutMapping("/{id}/accept")
+    public BookingResponse acceptBooking(@PathVariable Long id, Principal principal) {
+        return bookingService.acceptBooking(id, principal);
     }
 
-    @PutMapping("/update/{id}")
-    public Booking updateBookingStatus(
-            @PathVariable Long id,
-            @RequestParam String status){
-        return bookingService.updateBookingStatus(id, status);
+    @PutMapping("/{id}/reject")
+    public BookingResponse rejectBooking(@PathVariable Long id, Principal principal) {
+        return bookingService.rejectBooking(id, principal);
     }
 
-    @PutMapping("/accept/{id}")
-    public Booking acceptBooking(@PathVariable Long id){
-        return bookingService.acceptBooking(id);
-    }
-
-    @PutMapping("/reject/{id}")
-    public Booking rejectBooking(@PathVariable Long id){
-        return bookingService.rejectBooking(id);
-    }
-
-    @DeleteMapping("/delete/{id}")
-    public String deleteBooking(@PathVariable Long id){
-        bookingService.deleteBooking(id);
-        return "Booking deleted successfully";
+    @PutMapping("/{id}/complete")
+    public BookingResponse completeBooking(@PathVariable Long id, Principal principal) {
+        return bookingService.completeBooking(id, principal);
     }
 }

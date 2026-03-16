@@ -107,6 +107,7 @@ export const RegisterPage = () => {
   const navigate  = useNavigate();
   const [geoAddress, setGeoAddress] = useState('');
 
+
   // ── Reset form completely when component mounts ──────────────────────────────
   useEffect(() => {
     // Clear all form fields on mount
@@ -247,10 +248,9 @@ const handleSubmit = async (e) => {
       serviceArea: form.role === "provider" ? form.serviceArea : null,
       timeSlots: form.role === "provider" ? selectedSlots : [],
       idDocType: form.role === "provider" ? idDocType : null,
-      latitude: geoCoords.lat || null,
-      longitude: geoCoords.lng || null
+      latitude: geoCoords.lat ? parseFloat(geoCoords.lat) : null,
+      longitude: geoCoords.lng ? parseFloat(geoCoords.lng) : null
     };
-
     const response = await api.post("/auth/register", payload);
 
     if (form.role === "provider") {

@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, Star, MessageCircle, X, Loader2 } from 'lucide-react';
-import { api, fetchServiceCatalog, buildCategoryLookup, normalizeServiceCategoryFields } from '../../utils/api';
+import { MOCK_SERVICES, api } from '../../utils/api';
 import { StatusBadge, StarRating, Modal, EmptyState, SectionHeader } from '../../components/common/index';
 import { useAuth } from '../../context/AuthContext';
 
 export const CustomerBookingsPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
   const [reviewModal, setReviewModal] = useState(null);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [submitted, setSubmitted] = useState({});
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const tabs = [
     { id: 'all', label: 'All' },
@@ -23,85 +22,73 @@ export const CustomerBookingsPage = () => {
     { id: 'completed', label: 'Completed' },
     { id: 'cancelled', label: 'Cancelled' },
   ];
-
-  // ─── 1. FETCH REAL BOOKINGS FROM BACKEND ──────────────────────────────────
+// 🔥 1. Fetch REAL Bookings from Spring Boot (With Auto-Refresh)
   useEffect(() => {
-    const loadBookings = async () => {
+    let isMounted = true; // Prevents memory leaks if the user clicks away fast
+
+    const fetchBookings = async (showLoading = true) => {
       if (!user?.id) return;
       try {
-        setLoading(true);
-        // Load catalog for category icons
-        const catalog = await fetchServiceCatalog();
-        const lookup = buildCategoryLookup(catalog);
-
-        // Fetch customer's bookings
-        const res = await api.get(`/bookings/customer/${user.id}`);
-        const rawBookings = res.data;
-
-        // Enhance bookings with service details (Price, Provider Name, Icon)
-        const enhancedBookings = await Promise.all(
-          rawBookings.map(async (booking) => {
+        if (showLoading) setLoading(true); 
+        
+        const res = await api.get(`/bookings/customer`);
+        
+        const formatted = await Promise.all(res.data.map(async b => {
             try {
-              const serviceRes = await api.get(`/services/${booking.serviceId}`);
-              const serviceData = normalizeServiceCategoryFields(serviceRes.data, lookup);
-
+              // Try to fetch the shiny details
+              const sRes = await api.get(`/services/${b.serviceId}`);
               return {
-                id: booking.id,
-                serviceId: booking.serviceId,
-                service: `${serviceData.category} - ${serviceData.subcategory}`,
-                provider: serviceData.providerName || 'Provider',
-                date: booking.bookingDate,
-                timeSlot: booking.timeSlot,
-                status: booking.status.toLowerCase(),
-                price: serviceData.price || 0,
-                image: serviceData.image || '🔧'
+                  id: b.id,
+                  service: sRes.data.category,
+                  provider: sRes.data.providerName,
+                  providerId: sRes.data.providerId,
+                  date: b.bookingDate,
+                  timeSlot: b.timeSlot,
+                  status: b.status.toLowerCase(),
+                  price: sRes.data.price
               };
-            } catch (err) {
-              // Fallback if a service was deleted by the provider
-              return {
-                id: booking.id,
-                service: 'Service Unavailable',
-                provider: 'Unknown Provider',
-                date: booking.bookingDate,
-                timeSlot: booking.timeSlot,
-                status: booking.status.toLowerCase(),
-                price: 0,
-                image: '🔧'
+            } catch (e) {
+              // 🔥 FIX: Provide safe defaults for EVERY field so React doesn't crash
+              console.warn(`Could not load service details for booking ${b.id}`);
+              return { 
+                  id: b.id,
+                  service: "Service Unavailable", 
+                  provider: "Unknown Provider", 
+                  providerId: b.providerId || 0,
+                  date: b.bookingDate || "Unknown Date",
+                  timeSlot: b.timeSlot || "Unknown Time",
+                  status: b.status ? b.status.toLowerCase() : "pending",
+                  price: 0 
               };
             }
-          })
-        );
-
-        // Sort by date descending (Newest first)
-        enhancedBookings.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setBookings(enhancedBookings);
+        }));
+        
+        // Only update state if the user is still on this page
+        if (isMounted) {
+            // Sort by newest first!
+            formatted.sort((a, b) => new Date(b.date) - new Date(a.date));
+            setBookings(formatted);
+        }
       } catch (err) {
-        console.error("Failed to load bookings", err);
+        console.error("Failed to load customer bookings", err);
       } finally {
-        setLoading(false);
+        if (isMounted && showLoading) setLoading(false);
       }
     };
 
-    loadBookings();
+    fetchBookings(true); 
+
+    const interval = setInterval(() => {
+      fetchBookings(false); 
+    }, 5000);
+
+    return () => {
+        isMounted = false; // Cleanup
+        clearInterval(interval);
+    }
   }, [user]);
 
   const filtered = activeTab === 'all' ? bookings : bookings.filter(b => b.status === activeTab);
-
-  // ─── 2. HANDLE CANCEL BOOKING ─────────────────────────────────────────────
-  const handleCancelBooking = async (bookingId) => {
-    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
-    
-    try {
-      // Call the update endpoint your teammate made
-      await api.put(`/bookings/update/${bookingId}?status=cancelled`);
-      
-      // Update the UI instantly without reloading the page
-      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
-    } catch (err) {
-      console.error("Failed to cancel booking", err);
-      alert("Failed to cancel the booking. Please try again.");
-    }
-  };
 
   const submitReview = () => {
     if (!rating) return;
@@ -109,6 +96,18 @@ export const CustomerBookingsPage = () => {
     setReviewModal(null);
     setRating(0);
     setReviewText('');
+    alert("Review submitted successfully!");
+  };
+
+  // 🔥 2. Cancel via Spring Boot API
+  const cancelBooking = async (id) => {
+    try {
+      await api.put(`/bookings/${id}/cancel`);
+      setBookings(bookings.map(b => b.id === id ? { ...b, status: "cancelled" } : b));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to cancel booking.");
+    }
   };
 
   if (loading) {
@@ -158,64 +157,100 @@ export const CustomerBookingsPage = () => {
         />
       ) : (
         <div className="space-y-4">
-          {filtered.map(booking => (
-            <div key={booking.id} className="bg-dark-800 border border-dark-700 rounded-2xl p-5 hover:border-dark-600 transition-all">
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 bg-dark-700 rounded-xl flex items-center justify-center text-3xl flex-shrink-0">
-                  {booking.image}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <div>
-                      <h4 className="font-display font-semibold text-white">{booking.service}</h4>
-                      <p className="text-dark-400 text-sm">{booking.provider}</p>
-                    </div>
-                    <StatusBadge status={booking.status} />
+          {filtered.map(booking => {
+            const serviceIcon = MOCK_SERVICES.find(s => booking.service?.toLowerCase().includes(s.category.toLowerCase()))?.image || "🔧";
+            return (
+              <div key={booking.id} className="bg-dark-800 border border-dark-700 rounded-2xl p-5 hover:border-dark-600 transition-all">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 bg-dark-700 rounded-xl flex items-center justify-center text-3xl flex-shrink-0">
+                    {serviceIcon}
                   </div>
-                  <div className="flex items-center gap-4 mt-2 flex-wrap">
-                    <span className="flex items-center gap-1.5 text-sm text-dark-400">
-                      <Calendar className="w-4 h-4 text-brand-400" /> {booking.date}
-                    </span>
-                    <span className="flex items-center gap-1.5 text-sm text-dark-400">
-                      <Clock className="w-4 h-4 text-blue-400" /> {booking.timeSlot}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div>
+                        <h4 className="font-display font-semibold text-white">{booking.service}</h4>
+                        <p className="text-dark-400 text-sm">{booking.provider}</p>
 
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-dark-700 flex-wrap gap-3">
-                <p className="text-brand-400 font-bold text-lg">₹{booking.price}</p>
-                <div className="flex items-center gap-2">
-                  {booking.status === 'completed' && !submitted[booking.id] && (
-                    <button
-                      onClick={() => setReviewModal(booking)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/30 transition-all text-sm font-medium"
-                    >
-                      <Star className="w-4 h-4" /> Rate Service
-                    </button>
-                  )}
-                  {booking.status === 'completed' && submitted[booking.id] && (
-                    <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium">
-                      ✓ Review submitted
-                    </span>
-                  )}
-                  {(booking.status === 'pending' || booking.status === 'confirmed') && (
-                    <>
-                      <Link to="/customer/chat" className="flex items-center gap-1.5 btn-secondary py-2 text-sm">
-                        <MessageCircle className="w-4 h-4" /> Chat
-                      </Link>
-                      <button 
-                        onClick={() => handleCancelBooking(booking.id)}
+                        {booking.status === "pending" && (
+                          <p className="text-yellow-400 text-xs mt-1">
+                            Your request is pending. Provider will respond within 48 hours.
+                          </p>
+                        )}
+                      </div>
+                      <StatusBadge status={booking.status} />
+                    </div>
+                    <div className="flex items-center gap-4 mt-2 flex-wrap">
+                      <span className="flex items-center gap-1.5 text-sm text-dark-400">
+                        <Calendar className="w-4 h-4 text-brand-400" /> {booking.date}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-sm text-dark-400">
+                        <Clock className="w-4 h-4 text-blue-400" /> {booking.timeSlot}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-dark-700 flex-wrap gap-3">
+                  <p className="text-brand-400 font-bold text-lg">₹{booking.price}</p>
+                  <div className="flex items-center gap-2">
+                    
+                    {/* Review Button */}
+                    {booking.status === 'completed' && !submitted[booking.id] && (
+                      <button
+                        onClick={() => setReviewModal(booking)}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/30 transition-all text-sm font-medium"
+                      >
+                        <Star className="w-4 h-4" /> Rate Service
+                      </button>
+                    )}
+                    {booking.status === 'completed' && submitted[booking.id] && (
+                      <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium">
+                        ✓ Review submitted
+                      </span>
+                    )}
+
+                    {/* Pending Actions */}
+                    {booking.status === "pending" && (
+                      <button
+                        onClick={() => cancelBooking(booking.id)}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium"
                       >
                         <X className="w-4 h-4" /> Cancel
                       </button>
-                    </>
-                  )}
+                    )}
+
+                    {/* Confirmed Actions (THE MISSING PAY BUTTON!) */}
+                    {booking.status === "confirmed" && (
+                      <>
+                        <Link
+                          to="/customer/chat"
+                          state={{ contactId: booking.providerId, contactName: booking.provider, contactRole: 'Provider' }}
+                          className="flex items-center gap-1.5 btn-secondary py-2 text-sm"
+                        >
+                          <MessageCircle className="w-4 h-4" /> Chat
+                        </Link>
+
+                        <button
+                          onClick={() => cancelBooking(booking.id)}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium"
+                        >
+                          <X className="w-4 h-4" /> Cancel
+                        </button>
+
+                        <Link
+                          to="/customer/payment"
+                          state={booking}
+                          className="btn-primary py-2 text-sm"
+                        >
+                          Pay Now
+                        </Link>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

@@ -98,31 +98,40 @@ export const ServiceDetailPage = () => {
 
 const confirmBooking = async () => {
     try {
-      setIsSubmitting(true);
-      
-      // 1. Build the payload. Because of your backend fix, service.providerId now works perfectly!
+      setLoading(true); 
+
+      // 🔥 FIX 1: Only send what the new Backend DTO expects (plus the date!)
       const bookingPayload = {
         serviceId: service.id,
-        customerId: user.id,
-        providerId: service.providerId, // 🌟 Clean, simple, and guaranteed to work
-        bookingDate: selectedDate,
+        bookingDate: selectedDate, 
         timeSlot: selectedSlot
       };
 
-      console.log("Sending clean payload:", bookingPayload);
+      // 🔥 FIX 2: Removed "/create" to perfectly match the teammate's new Controller
+      const res = await api.post('/bookings', bookingPayload); 
 
-      // 2. Send the POST request to the backend
-      await api.post('/bookings/create', bookingPayload);
+      const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+      await api.post('/notifications/create', {
+        userId: service.exactProviderId, // Using the safely extracted ID
+        bookingId: res.data.id,
+        role: "provider",
+        icon: "📅",
+        text: `New booking request for ${service.category} from Customer #${user.id}`,
+        viewed: false,
+        createdAt: Date.now()
+      });
+      localStorage.setItem("notifications", JSON.stringify(notifications));
 
-      // 3. Show the success UI
       setConfirmed(true);
-      setTimeout(() => navigate("/customer/bookings"), 2000);
-      
+      setTimeout(() => {
+        navigate("/customer/bookings");
+      }, 1500);
+
     } catch (err) {
       console.error("Booking failed:", err);
-      alert(err.response?.data?.message || err.response?.data || "Failed to create booking.");
+      alert("Failed to create booking.");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
   const today = new Date().toISOString().split("T")[0];
@@ -227,6 +236,7 @@ const confirmBooking = async () => {
               </div>
               <Link
                 to={`/customer/chat`}
+                state={{ contactId: service.exactProviderId, contactName: service.providerName, contactRole: 'Provider' }}
                 className="btn-secondary flex items-center gap-2 py-2 text-sm"
               >
                 <MessageCircle className="w-4 h-4" /> Message

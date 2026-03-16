@@ -35,7 +35,8 @@ export const ServicesPage = () => {
 
   const [locationSearch, setLocationSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [mapLocation, setMapLocation] = useState(null);
+  // FIX 3: Start with a real coordinate so services load instantly!
+  const [mapLocation, setMapLocation] = useState({ lat: 13.0827, lng: 80.2707 });
 
   // NEW: Routing states
   const [route, setRoute] = useState(null);
@@ -47,31 +48,38 @@ export const ServicesPage = () => {
     return categories.find((c) => c.name === category)?.icon || "🔧";
   };
 
-  const fetchServices = async (
-    coords = null,
-    lookupOverride = categoryLookup,
-  ) => {
+const fetchServices = async (coords = null, lookupOverride = categoryLookup) => {
     try {
       setLoading(true);
-      setRoute(null); // Clear previous road tracks when fetching new area
+      setRoute(null); 
       setRouteDistance("");
-      let res;
 
-      // If we have map coordinates, call the nearby API!
-      if (coords) {
-        res = await api.get("/services/nearby", {
-          params: { lat: coords.lat, lng: coords.lng, distance: 20 },
-        });
-      } else {
-        res = await api.get("/services");
-      }
-
+      // 🔥 FIX 2: ALWAYS fetch all services initially so the screen is never empty!
+      const res = await api.get("/services");
       const data = Array.isArray(res.data) ? res.data : [];
+
+      // Frontend Math to calculate exact distance without relying on the backend filter
+      const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        if (!lat1 || !lon1 || !lat2 || !lon2) return 9999;
+        const R = 6371; 
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      };
+
       const formattedServices = data.map((service) => {
-        const normalized = normalizeServiceCategoryFields(
-          service,
-          lookupOverride,
-        );
+        const normalized = normalizeServiceCategoryFields(service, lookupOverride);
+        
+        let distStr = "N/A";
+        let rawDist = 9999;
+
+        // If we have coordinates, calculate the real km distance!
+        if (coords && normalized.providerLat && normalized.providerLng) {
+            rawDist = calculateDistance(coords.lat, coords.lng, normalized.providerLat, normalized.providerLng);
+            distStr = rawDist.toFixed(1) + " km";
+        }
+
         return {
           ...normalized,
           rating: normalized.rating ?? 0,
@@ -79,7 +87,8 @@ export const ServicesPage = () => {
           verified: normalized.verified ?? false,
           completedJobs: normalized.completedJobs ?? 0,
           image: normalized.image ?? getIcon(normalized.category),
-          distance: normalized.distance ?? normalized.providerLocation ?? "",
+          distance: distStr,
+          rawDistance: rawDist // Used for the "Sort by Nearest" filter
         };
       });
 
@@ -91,23 +100,29 @@ export const ServicesPage = () => {
     }
   };
 
-  // Initial load
+// 🔥 FIX 1: Initial load & GPS tracking
   useEffect(() => {
-    const initPageData = async () => {
-      try {
-        const catalog = await fetchServiceCatalog();
-        setCategories(catalog);
-        const lookup = buildCategoryLookup(catalog);
-        setCategoryLookup(lookup);
-        await fetchServices(null, lookup);
-      } catch (error) {
-        console.error("Failed to initialize catalog:", error);
-        await fetchServices();
-      }
-    };
+    // 1. Instantly load services using the default mapLocation (Chennai)
+    fetchServices(mapLocation);
 
-    initPageData();
-  }, []);
+    // 2. Try to find the user's real GPS location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setMapLocation(coords);
+          fetchServices(coords); // 3. Reload services centered on their REAL location!
+        },
+        (error) => {
+          console.warn("Could not get location. Using default.", error);
+        }
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on page load
 
   const handleMapClick = (coords) => {
     setMapLocation(coords);
