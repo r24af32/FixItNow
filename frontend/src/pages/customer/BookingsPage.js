@@ -3,14 +3,13 @@ import { Link } from 'react-router-dom';
 import { Calendar, Clock, Star, MessageCircle, X, Loader2 } from 'lucide-react';
 import { MOCK_SERVICES, api } from '../../utils/api';
 import { StatusBadge, StarRating, Modal, EmptyState, SectionHeader } from '../../components/common/index';
+import { ReviewForm } from '../../components/reviews/ReviewForm';
 import { useAuth } from '../../context/AuthContext';
 
 export const CustomerBookingsPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
   const [reviewModal, setReviewModal] = useState(null);
-  const [rating, setRating] = useState(0);
-  const [reviewText, setReviewText] = useState('');
   const [submitted, setSubmitted] = useState({});
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -90,13 +89,9 @@ export const CustomerBookingsPage = () => {
 
   const filtered = activeTab === 'all' ? bookings : bookings.filter(b => b.status === activeTab);
 
-  const submitReview = () => {
-    if (!rating) return;
+  const handleReviewSuccess = () => {
     setSubmitted({ ...submitted, [reviewModal.id]: true });
     setReviewModal(null);
-    setRating(0);
-    setReviewText('');
-    alert("Review submitted successfully!");
   };
 
   // 🔥 2. Cancel via Spring Boot API
@@ -257,28 +252,11 @@ export const CustomerBookingsPage = () => {
       {/* Review Modal */}
       <Modal isOpen={!!reviewModal} onClose={() => setReviewModal(null)} title="Rate & Review" size="sm">
         {reviewModal && (
-          <div className="space-y-4">
-            <div className="text-center py-2">
-              <p className="text-dark-300 text-sm mb-1">How was your experience with</p>
-              <p className="font-semibold text-white">{reviewModal.provider}?</p>
-            </div>
-            <div className="flex justify-center">
-              <StarRating rating={rating} size="xl" interactive onChange={setRating} />
-            </div>
-            <div className="text-center text-sm text-dark-400">
-              {['', 'Terrible', 'Bad', 'OK', 'Good', 'Excellent'][rating]}
-            </div>
-            <textarea
-              rows={3}
-              placeholder="Share your experience (optional)"
-              value={reviewText}
-              onChange={e => setReviewText(e.target.value)}
-              className="input-field resize-none text-sm"
-            />
-            <button onClick={submitReview} disabled={!rating} className="btn-primary w-full disabled:opacity-40">
-              Submit Review
-            </button>
-          </div>
+          <ReviewForm
+            booking={reviewModal}
+            onSuccess={handleReviewSuccess}
+            onCancel={() => setReviewModal(null)}
+          />
         )}
       </Modal>
     </div>

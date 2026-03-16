@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { StarRating, Modal } from "../../components/common/index";
+import { ReviewList } from "../../components/reviews/ReviewList";
 import {
   api,
   fetchServiceCatalog,
@@ -21,39 +22,6 @@ import {
 } from "../../utils/api";
 
 const TIME_SLOTS = [
-  "9:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "2:00 PM",
-  "3:00 PM",
-  "4:00 PM",
-  "5:00 PM",
-];
-const REVIEWS = [
-  {
-    id: 1,
-    name: "Priya N.",
-    rating: 5,
-    comment: "Excellent work! Very professional and completed on time.",
-    date: "2 days ago",
-  },
-  {
-    id: 2,
-    name: "Arun M.",
-    rating: 4,
-    comment: "Good service, arrived a bit late but the work quality was great.",
-    date: "1 week ago",
-  },
-  {
-    id: 3,
-    name: "Kavita S.",
-    rating: 5,
-    comment:
-      "Highly recommend! Fixed the issue quickly and explained everything.",
-    date: "2 weeks ago",
-  },
-];
 
 export const ServiceDetailPage = () => {
   const { id } = useParams();
@@ -280,32 +248,7 @@ const confirmBooking = async () => {
             <h3 className="font-display font-semibold text-lg text-white mb-4">
               Customer Reviews
             </h3>
-            <div className="space-y-4">
-              {REVIEWS.map((rev) => (
-                <div
-                  key={rev.id}
-                  className="pb-4 border-b border-dark-700 last:border-0 last:pb-0"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-brand-500/20 rounded-full flex items-center justify-center text-sm font-bold text-brand-400">
-                        {rev.name[0]}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-white">
-                          {rev.name}
-                        </p>
-                        <p className="text-xs text-dark-500">{rev.date}</p>
-                      </div>
-                    </div>
-                    <StarRating rating={rev.rating} size="sm" />
-                  </div>
-                  <p className="text-dark-300 text-sm leading-relaxed">
-                    {rev.comment}
-                  </p>
-                </div>
-              ))}
-            </div>
+            <ReviewList providerId={service?.exactProviderId || service?.providerId} />
           </div>
         </div>
 
