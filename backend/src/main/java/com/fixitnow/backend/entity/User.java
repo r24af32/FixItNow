@@ -3,7 +3,6 @@ package com.fixitnow.backend.entity;
 import jakarta.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fixitnow.backend.entity.ProviderProfile;
 
 @Entity
 @Table(name = "users")

@@ -7,14 +7,12 @@ import com.fixitnow.backend.entity.User;
 import com.fixitnow.backend.repository.ProviderProfileRepository;
 import com.fixitnow.backend.repository.ServiceRepository;
 import com.fixitnow.backend.repository.UserRepository;
-import com.fixitnow.backend.dto.ServiceRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 
 import com.fixitnow.backend.entity.ProviderProfile;
 import com.fixitnow.backend.entity.Role;
-import java.security.Principal;
 import java.util.List;
 
 @RestController

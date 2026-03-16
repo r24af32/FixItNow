@@ -11,11 +11,9 @@ import {
 import {
   api,
   SERVICE_CATEGORIES,
-  fetchServiceCatalog,
-  buildCategoryLookup,
   normalizeServiceCategoryFields,
 } from "../../utils/api";
-import { StarRating, SectionHeader } from "../../components/common/index";
+import { SectionHeader } from "../../components/common/index";
 import MapSelector from "../../components/common/MapSelector";
 
 export const ServicesPage = () => {
@@ -24,11 +22,11 @@ export const ServicesPage = () => {
   const [sortBy, setSortBy] = useState("rating");
   const [maxPrice, setMaxPrice] = useState(3000);
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode] = useState("grid");
   const [services, setServices] = useState([]);
-  const [categories, setCategories] = useState(SERVICE_CATEGORIES);
+  const [categories] = useState(SERVICE_CATEGORIES);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [categoryLookup, setCategoryLookup] = useState({
+  const [categoryLookup] = useState({
     categoryIdToName: new Map(),
     subcategoryIdToName: new Map(),
   });
@@ -36,7 +34,10 @@ export const ServicesPage = () => {
   const [locationSearch, setLocationSearch] = useState("");
   const [loading, setLoading] = useState(true);
   // FIX 3: Start with a real coordinate so services load instantly!
-  const [mapLocation, setMapLocation] = useState({ lat: 13.0827, lng: 80.2707 });
+  const [mapLocation, setMapLocation] = useState({
+    lat: 13.0827,
+    lng: 80.2707,
+  });
 
   // NEW: Routing states
   const [route, setRoute] = useState(null);
@@ -48,10 +49,13 @@ export const ServicesPage = () => {
     return categories.find((c) => c.name === category)?.icon || "🔧";
   };
 
-const fetchServices = async (coords = null, lookupOverride = categoryLookup) => {
+  const fetchServices = async (
+    coords = null,
+    lookupOverride = categoryLookup,
+  ) => {
     try {
       setLoading(true);
-      setRoute(null); 
+      setRoute(null);
       setRouteDistance("");
 
       // 🔥 FIX 2: ALWAYS fetch all services initially so the screen is never empty!
@@ -61,23 +65,36 @@ const fetchServices = async (coords = null, lookupOverride = categoryLookup) => 
       // Frontend Math to calculate exact distance without relying on the backend filter
       const calculateDistance = (lat1, lon1, lat2, lon2) => {
         if (!lat1 || !lon1 || !lat2 || !lon2) return 9999;
-        const R = 6371; 
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       };
 
       const formattedServices = data.map((service) => {
-        const normalized = normalizeServiceCategoryFields(service, lookupOverride);
-        
+        const normalized = normalizeServiceCategoryFields(
+          service,
+          lookupOverride,
+        );
+
         let distStr = "N/A";
         let rawDist = 9999;
 
         // If we have coordinates, calculate the real km distance!
         if (coords && normalized.providerLat && normalized.providerLng) {
-            rawDist = calculateDistance(coords.lat, coords.lng, normalized.providerLat, normalized.providerLng);
-            distStr = rawDist.toFixed(1) + " km";
+          rawDist = calculateDistance(
+            coords.lat,
+            coords.lng,
+            normalized.providerLat,
+            normalized.providerLng,
+          );
+          distStr = rawDist.toFixed(1) + " km";
         }
 
         return {
@@ -88,7 +105,7 @@ const fetchServices = async (coords = null, lookupOverride = categoryLookup) => 
           completedJobs: normalized.completedJobs ?? 0,
           image: normalized.image ?? getIcon(normalized.category),
           distance: distStr,
-          rawDistance: rawDist // Used for the "Sort by Nearest" filter
+          rawDistance: rawDist, // Used for the "Sort by Nearest" filter
         };
       });
 
@@ -100,7 +117,7 @@ const fetchServices = async (coords = null, lookupOverride = categoryLookup) => 
     }
   };
 
-// 🔥 FIX 1: Initial load & GPS tracking
+  // 🔥 FIX 1: Initial load & GPS tracking
   useEffect(() => {
     // 1. Instantly load services using the default mapLocation (Chennai)
     fetchServices(mapLocation);
@@ -118,7 +135,7 @@ const fetchServices = async (coords = null, lookupOverride = categoryLookup) => 
         },
         (error) => {
           console.warn("Could not get location. Using default.", error);
-        }
+        },
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -282,7 +299,6 @@ const fetchServices = async (coords = null, lookupOverride = categoryLookup) => 
       {showFilters && (
         <div className="bg-dark-800 border border-dark-700 p-4 rounded-xl mt-3 animate-fade-in">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
-            
             {/* Sort Dropdown */}
             <div>
               <label className="text-xs text-dark-400 font-medium mb-1.5 block">

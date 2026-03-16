@@ -11,7 +11,6 @@ import com.fixitnow.backend.repository.UserRepository;
 import com.fixitnow.backend.entity.User;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.HashMap;
 import java.util.List;
 
 @RestController
@@ -50,7 +49,7 @@ public class ChatController {
     }
 
     @Autowired
-    private com.fixitnow.backend.repository.UserRepository userRepository;
+        private UserRepository userRepository;
 
     // ─── 3. HTTP ENDPOINT TO GET USER NAMES FOR THE SIDEBAR ──────────────────
     @GetMapping("/api/users/{id}")

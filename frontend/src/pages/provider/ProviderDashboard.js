@@ -1,24 +1,34 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { TrendingUp, Star, DollarSign, ChevronRight, Users, CheckCircle } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { MOCK_PROVIDER_BOOKINGS } from '../../utils/api';
-import { StatusBadge, SectionHeader } from '../../components/common/index';
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Star,
+  DollarSign,
+  ChevronRight,
+  Users,
+  CheckCircle,
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { api } from "../../utils/api";
+import { StatusBadge, SectionHeader } from "../../components/common/index";
 
-const StatCard = ({ icon, label, value, sub, trend, color = 'brand' }) => {
+const StatCard = ({ icon, label, value, sub, trend, color = "brand" }) => {
   const colorMap = {
-    brand: 'text-brand-400 bg-brand-500/10',
-    green: 'text-green-400 bg-green-500/10',
-    blue: 'text-blue-400 bg-blue-500/10',
-    yellow: 'text-yellow-400 bg-yellow-500/10',
+    brand: "text-brand-400 bg-brand-500/10",
+    green: "text-green-400 bg-green-500/10",
+    blue: "text-blue-400 bg-blue-500/10",
+    yellow: "text-yellow-400 bg-yellow-500/10",
   };
   return (
     <div className="stat-card">
       <div className="flex items-start justify-between mb-3">
         <div className={`p-2.5 rounded-xl ${colorMap[color]}`}>{icon}</div>
-        {trend && <span className={`text-xs font-medium ${trend > 0 ? 'text-green-400' : 'text-red-400'}`}>
-          {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
-        </span>}
+        {trend && (
+          <span
+            className={`text-xs font-medium ${trend > 0 ? "text-green-400" : "text-red-400"}`}
+          >
+            {trend > 0 ? "↑" : "↓"} {Math.abs(trend)}%
+          </span>
+        )}
       </div>
       <p className="font-display font-bold text-2xl text-white">{value}</p>
       <p className="text-dark-400 text-sm mt-0.5">{label}</p>
@@ -29,7 +39,133 @@ const StatCard = ({ icon, label, value, sub, trend, color = 'brand' }) => {
 
 export const ProviderDashboard = () => {
   const { user } = useAuth();
-  const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+  const [bookings, setBookings] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const buildLocalIsoDate = (dateObj) => {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const day = String(dateObj.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      if (!user?.id) return;
+
+      try {
+        setLoading(true);
+
+        const bookingsRes = await api.get("/bookings/provider");
+        const rawBookings = Array.isArray(bookingsRes.data)
+          ? bookingsRes.data
+          : [];
+
+        const enrichedBookings = await Promise.all(
+          rawBookings.map(async (booking) => {
+            let servicePrice = 0;
+
+            if (booking.serviceId) {
+              try {
+                const serviceRes = await api.get(
+                  `/services/${booking.serviceId}`,
+                );
+                servicePrice = Number(serviceRes.data?.price || 0);
+              } catch {
+                servicePrice = 0;
+              }
+            }
+
+            return {
+              id: booking.id,
+              customer:
+                booking.customerName || `Customer #${booking.customerId}`,
+              service: [booking.serviceCategory, booking.serviceSubcategory]
+                .filter(Boolean)
+                .join(" - "),
+              date: booking.bookingDate,
+              timeSlot: booking.timeSlot,
+              status: (booking.status || "").toLowerCase(),
+              price: servicePrice,
+              address: booking.customerLocation || "Location unavailable",
+            };
+          }),
+        );
+
+        const reviewsRes = await api.get(`/reviews/provider/${user.id}`);
+        setBookings(enrichedBookings);
+        setReviews(Array.isArray(reviewsRes.data) ? reviewsRes.data : []);
+      } catch (err) {
+        console.error("Failed to load provider dashboard data", err);
+        setBookings([]);
+        setReviews([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, [user]);
+
+  const today = new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  const stats = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const completedThisMonth = bookings.filter((booking) => {
+      if (booking.status !== "completed" || !booking.date) return false;
+      const bookingDate = new Date(booking.date);
+      return (
+        !Number.isNaN(bookingDate.getTime()) &&
+        bookingDate.getMonth() === currentMonth &&
+        bookingDate.getFullYear() === currentYear
+      );
+    });
+
+    const monthlyEarnings = completedThisMonth.reduce(
+      (sum, booking) => sum + Number(booking.price || 0),
+      0,
+    );
+
+    const avgRating =
+      reviews.length > 0
+        ? (
+            reviews.reduce(
+              (sum, review) => sum + Number(review.rating || 0),
+              0,
+            ) / reviews.length
+          ).toFixed(1)
+        : "--";
+
+    return {
+      monthlyEarnings,
+      completedThisMonth: completedThisMonth.length,
+      newRequests: bookings.filter((booking) => booking.status === "pending")
+        .length,
+      avgRating,
+      reviewCount: reviews.length,
+      todayBookings: bookings.filter(
+        (booking) =>
+          booking.date === buildLocalIsoDate(now) &&
+          booking.status !== "cancelled",
+      ),
+    };
+  }, [bookings, reviews]);
+
+  if (loading) {
+    return (
+      <div className="text-dark-300 py-10 text-center">
+        Loading dashboard...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -38,7 +174,7 @@ export const ProviderDashboard = () => {
         <div>
           <p className="text-dark-400 text-sm">{today}</p>
           <h1 className="font-display font-bold text-2xl text-white mt-1">
-            Good day, {user?.name?.split(' ')[0] || 'Provider'}! 👋
+            Good day, {user?.name?.split(" ")[0] || "Provider"}! 👋
           </h1>
           <p className="text-dark-400 mt-1">Here's your service overview</p>
         </div>
@@ -55,21 +191,68 @@ export const ProviderDashboard = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<DollarSign className="w-5 h-5" />} label="Total Earnings" value="₹28,450" sub="This month" trend={12} color="green" />
-        <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Jobs Completed" value="47" sub="This month" trend={8} color="brand" />
-        <StatCard icon={<Star className="w-5 h-5" />} label="Avg Rating" value="4.8" sub="From 124 reviews" trend={3} color="yellow" />
-        <StatCard icon={<Users className="w-5 h-5" />} label="New Requests" value="5" sub="Needs attention" color="blue" />
+        <StatCard
+          icon={<DollarSign className="w-5 h-5" />}
+          label="Total Earnings"
+          value={`₹${stats.monthlyEarnings.toLocaleString("en-IN")}`}
+          sub="This month"
+          color="green"
+        />
+        <StatCard
+          icon={<CheckCircle className="w-5 h-5" />}
+          label="Jobs Completed"
+          value={String(stats.completedThisMonth)}
+          sub="This month"
+          color="brand"
+        />
+        <StatCard
+          icon={<Star className="w-5 h-5" />}
+          label="Rating"
+          value={stats.avgRating}
+          sub={`From ${stats.reviewCount} reviews`}
+          color="yellow"
+        />
+        <StatCard
+          icon={<Users className="w-5 h-5" />}
+          label="New Requests"
+          value={String(stats.newRequests)}
+          sub="Needs attention"
+          color="blue"
+        />
       </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'New Booking', emoji: '📅', path: '/provider/bookings', color: 'border-brand-500/50 bg-brand-500/10 hover:bg-brand-500/20' },
-          { label: 'Add Service', emoji: '➕', path: '/provider/services/new', color: 'border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20' },
-          { label: 'View Messages', emoji: '💬', path: '/provider/chat', color: 'border-green-500/50 bg-green-500/10 hover:bg-green-500/20' },
-          { label: 'My Profile', emoji: '👤', path: '/provider/settings', color: 'border-purple-500/50 bg-purple-500/10 hover:bg-purple-500/20' },
-        ].map(item => (
-          <Link key={item.label} to={item.path}
+          {
+            label: "New Booking",
+            emoji: "📅",
+            path: "/provider/bookings",
+            color: "border-brand-500/50 bg-brand-500/10 hover:bg-brand-500/20",
+          },
+          {
+            label: "Add Service",
+            emoji: "➕",
+            path: "/provider/services/new",
+            color: "border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/20",
+          },
+          {
+            label: "View Messages",
+            emoji: "💬",
+            path: "/provider/chat",
+            color: "border-green-500/50 bg-green-500/10 hover:bg-green-500/20",
+          },
+          {
+            label: "My Profile",
+            emoji: "👤",
+            path: "/provider/settings",
+            color:
+              "border-purple-500/50 bg-purple-500/10 hover:bg-purple-500/20",
+          },
+        ].map((item) => (
+          <Link
+            key={item.label}
+            to={item.path}
             className={`flex flex-col items-center gap-2 p-4 rounded-xl border ${item.color} transition-all text-center card-hover`}
           >
             <span className="text-2xl">{item.emoji}</span>
@@ -82,68 +265,95 @@ export const ProviderDashboard = () => {
       <div>
         <SectionHeader
           title="Today's Bookings"
-          subtitle={`${MOCK_PROVIDER_BOOKINGS.filter(b => b.status !== 'cancelled').length} scheduled for today`}
+          subtitle={`${stats.todayBookings.length} scheduled for today`}
           action={
-            <Link to="/provider/bookings" className="flex items-center gap-1 text-brand-400 hover:text-brand-300 text-sm font-medium">
+            <Link
+              to="/provider/bookings"
+              className="flex items-center gap-1 text-brand-400 hover:text-brand-300 text-sm font-medium"
+            >
               View all <ChevronRight className="w-4 h-4" />
             </Link>
           }
         />
         <div className="space-y-3">
-          {MOCK_PROVIDER_BOOKINGS.map(booking => (
-            <div key={booking.id} className="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-dark-600 transition-all">
-              <div className="flex items-start gap-4">
-                <div className="flex flex-col items-center gap-0.5 min-w-[60px]">
-                  <p className="text-xs text-dark-400">Time</p>
-                  <p className="text-sm font-bold text-white">{booking.timeSlot.split(' ')[0]}</p>
-                  <p className="text-xs text-dark-500">{booking.timeSlot.split(' ')[1]}</p>
-                </div>
-                <div className="w-px h-10 bg-dark-700" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div>
-                      <p className="font-semibold text-white">{booking.customer}</p>
-                      <p className="text-dark-400 text-sm">{booking.service}</p>
-                      <p className="text-dark-500 text-xs mt-0.5">📍 {booking.address}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <StatusBadge status={booking.status} />
-                      <p className="text-brand-400 font-bold">₹{booking.price}</p>
-                    </div>
+          {stats.todayBookings.length === 0 ? (
+            <div className="bg-dark-800 border border-dark-700 rounded-xl p-4 text-dark-400 text-sm">
+              No bookings scheduled for today.
+            </div>
+          ) : (
+            stats.todayBookings.map((booking) => (
+              <div
+                key={booking.id}
+                className="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-dark-600 transition-all"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex flex-col items-center gap-0.5 min-w-[60px]">
+                    <p className="text-xs text-dark-400">Time</p>
+                    <p className="text-sm font-bold text-white">
+                      {booking.timeSlot.split(" ")[0]}
+                    </p>
+                    <p className="text-xs text-dark-500">
+                      {booking.timeSlot.split(" ")[1]}
+                    </p>
                   </div>
-                  {booking.status === 'pending' && (
-                    <div className="flex gap-2 mt-3">
-                      <button className="flex-1 py-1.5 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-all text-sm font-medium">
-                        ✓ Accept
-                      </button>
-                      <button className="flex-1 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium">
-                        ✗ Decline
-                      </button>
+                  <div className="w-px h-10 bg-dark-700" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <p className="font-semibold text-white">
+                          {booking.customer}
+                        </p>
+                        <p className="text-dark-400 text-sm">
+                          {booking.service}
+                        </p>
+                        <p className="text-dark-500 text-xs mt-0.5">
+                          📍 {booking.address}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <StatusBadge status={booking.status} />
+                        <p className="text-brand-400 font-bold">
+                          ₹{booking.price}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                  {booking.status === 'confirmed' && (
-                    <button className="mt-3 w-full py-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30 transition-all text-sm font-medium">
-                      Mark as Completed
-                    </button>
-                  )}
+                    {booking.status === "pending" && (
+                      <div className="flex gap-2 mt-3">
+                        <button className="flex-1 py-1.5 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-all text-sm font-medium">
+                          ✓ Accept
+                        </button>
+                        <button className="flex-1 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium">
+                          ✗ Decline
+                        </button>
+                      </div>
+                    )}
+                    {booking.status === "confirmed" && (
+                      <button className="mt-3 w-full py-1.5 rounded-lg bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30 transition-all text-sm font-medium">
+                        Mark as Completed
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
-      {/* Earnings Chart Placeholder */}
       <div>
-        <SectionHeader title="Earnings This Month" />
-        <div className="bg-dark-800 border border-dark-700 rounded-2xl p-5">
-          <div className="flex items-end gap-1.5 h-32">
-            {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88, 72, 64, 90, 78, 85, 92, 88, 95, 80, 70, 85, 90, 75, 88, 92, 86, 79, 95].map((v, i) => (
-              <div key={i} className="flex-1 rounded-sm transition-all hover:opacity-80 cursor-pointer" style={{ height: `${v}%`, backgroundColor: i === 29 ? '#f97316' : `rgba(249,115,22,${0.2 + v / 200})` }} title={`Day ${i + 1}: ₹${(v * 100).toLocaleString()}`} />
-            ))}
+        <SectionHeader title="This Month Summary" />
+        <div className="bg-dark-800 border border-dark-700 rounded-2xl p-5 grid grid-cols-2 gap-4">
+          <div className="bg-dark-900/50 rounded-xl p-4">
+            <p className="text-dark-400 text-xs">Revenue</p>
+            <p className="text-brand-400 font-bold text-xl">
+              ₹{stats.monthlyEarnings.toLocaleString("en-IN")}
+            </p>
           </div>
-          <div className="flex justify-between text-xs text-dark-500 mt-2">
-            <span>1 Aug</span><span>15 Aug</span><span>31 Aug</span>
+          <div className="bg-dark-900/50 rounded-xl p-4">
+            <p className="text-dark-400 text-xs">Completed Jobs</p>
+            <p className="text-white font-bold text-xl">
+              {stats.completedThisMonth}
+            </p>
           </div>
         </div>
       </div>

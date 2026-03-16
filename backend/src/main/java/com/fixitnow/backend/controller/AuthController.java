@@ -35,6 +35,14 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
 
+        String normalizedEmail = request.getEmail() == null
+                ? null
+                : request.getEmail().trim().toLowerCase();
+
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            return ResponseEntity.badRequest().body("Email is required");
+        }
+
         // Check if role is missing
         if (request.getRole() == null) {
             return ResponseEntity.badRequest().body("Role is required");
@@ -49,7 +57,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Passwords do not match");
         }
 
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (userRepository.findByEmailIgnoreCase(normalizedEmail).isPresent()) {
             return ResponseEntity.badRequest().body("Email already exists");
         }
 
@@ -62,7 +70,7 @@ public class AuthController {
 
         User user = new User();
         user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setLocation(request.getLocation());
         user.setRole(parsedRole);
@@ -103,11 +111,16 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
 
-        if (loginRequest.getEmail() == null || loginRequest.getPassword() == null) {
+        String normalizedEmail = loginRequest.getEmail() == null
+                ? null
+                : loginRequest.getEmail().trim().toLowerCase();
+
+        if (normalizedEmail == null || normalizedEmail.isBlank()
+                || loginRequest.getPassword() == null || loginRequest.getPassword().isBlank()) {
             return ResponseEntity.badRequest().body("Email and password are required");
         }
 
-        User user = userRepository.findByEmail(loginRequest.getEmail()).orElse(null);
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
         }
