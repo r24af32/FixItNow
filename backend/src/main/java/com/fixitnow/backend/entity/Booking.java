@@ -1,56 +1,122 @@
 package com.fixitnow.backend.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
-@Table(name="bookings")
+@Table(name = "bookings")
 public class Booking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 🔥 Explicitly map to the database columns
-    @Column(name = "service_id")
-    private Long serviceId;
+    @ManyToOne
+    @JoinColumn(name = "customer_id", nullable = false)
+    @JsonIgnoreProperties({"password", "providerProfile"})
+    private User customer;
 
-    @Column(name = "customer_id")
-    private Long customerId;
+    @ManyToOne
+    @JoinColumn(name = "provider_id", nullable = false)
+    @JsonIgnoreProperties({"password", "providerProfile"})
+    private User provider;
 
-    @Column(name = "provider_id")
-    private Long providerId;
+    @ManyToOne
+    @JoinColumn(name = "service_id", nullable = false)
+    private ServiceEntity service;
 
-    @Column(name = "booking_date")
-    private LocalDate bookingDate;
-
-    @Column(name = "time_slot")
+    @Column(name = "time_slot", nullable = false)
     private String timeSlot;
 
-    @Column(name = "status")
+    @Column(nullable = false)
     private String status;
 
-    public Booking() {}
+    @Column
+    private LocalDateTime createdAt;
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    @Column(name = "booking_date")
+    private String bookingDate;
+
+    public Booking() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (status != null) {
+            status = status.toUpperCase();
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        if (status != null) {
+            status = status.toUpperCase();
+        }
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public User getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(User customer) {
+        this.customer = customer;
+    }
+
+    public User getProvider() {
+        return provider;
+    }
+
+    public void setProvider(User provider) {
+        this.provider = provider;
+    }
+
+    public ServiceEntity getService() {
+        return service;
+    }
+
+    public void setService(ServiceEntity service) {
+        this.service = service;
+    }
+
+    public String getTimeSlot() {
+        return timeSlot;
+    }
+
+    public void setTimeSlot(String timeSlot) {
+        this.timeSlot = timeSlot;
+    }
+
+    public String getBookingDate() {
+        return bookingDate;
+    }
+
+    public void setBookingDate(String bookingDate) {
+        this.bookingDate = bookingDate;
+    }
     
-    public Long getServiceId() { return serviceId; }
-    public void setServiceId(Long serviceId) { this.serviceId = serviceId; }
-    
-    public Long getCustomerId() { return customerId; }
-    public void setCustomerId(Long customerId) { this.customerId = customerId; }
-    
-    public Long getProviderId() { return providerId; }
-    public void setProviderId(Long providerId) { this.providerId = providerId; }
-    
-    public LocalDate getBookingDate() { return bookingDate; }
-    public void setBookingDate(LocalDate bookingDate) { this.bookingDate = bookingDate; }
-    
-    public String getTimeSlot() { return timeSlot; }
-    public void setTimeSlot(String timeSlot) { this.timeSlot = timeSlot; }
-    
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }

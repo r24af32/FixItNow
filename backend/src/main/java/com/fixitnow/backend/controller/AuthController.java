@@ -66,6 +66,8 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setLocation(request.getLocation());
         user.setRole(parsedRole);
+        user.setLatitude(request.getLatitude());
+        user.setLongitude(request.getLongitude());
 
         User savedUser = userRepository.save(user);
 
