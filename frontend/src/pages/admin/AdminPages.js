@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   Search,
   Filter,
@@ -60,32 +60,32 @@ const ALL_USERS = [
   },
 ];
 
-// // ── Pending Providers mock data ──────────────────────────────────────────────
+// // â”€â”€ Pending Providers mock data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // const INITIAL_PENDING_PROVIDERS = [
 //   {
 //     id: 101, name: 'Vikram Patel', email: 'vikram@gmail.com', phone: '+91 98765 43210',
 //     category: 'AC Repair', location: 'Marathahalli, Bengaluru', serviceArea: '10 km',
 //     submittedAt: '2025-08-10', status: 'pending',
-//     timeSlots: ['9:00 AM – 11:00 AM', '2:00 PM – 4:00 PM', '4:00 PM – 6:00 PM'],
+//     timeSlots: ['9:00 AM - 11:00 AM', '2:00 PM - 4:00 PM', '4:00 PM - 6:00 PM'],
 //     idProof: { docType: 'Aadhaar Card', fileName: 'vikram_aadhaar.jpg', fileSize: '1.2 MB' },
 //   },
 //   {
 //     id: 102, name: 'Lakshmi Devi', email: 'lakshmi@gmail.com', phone: '+91 87654 32109',
 //     category: 'Plumbing', location: 'Jayanagar, Bengaluru', serviceArea: '5 km',
 //     submittedAt: '2025-08-12', status: 'pending',
-//     timeSlots: ['11:00 AM – 1:00 PM', '6:00 PM – 8:00 PM'],
+//     timeSlots: ['11:00 AM - 1:00 PM', '6:00 PM - 8:00 PM'],
 //     idProof: { docType: 'PAN Card', fileName: 'lakshmi_pan.pdf', fileSize: '850 KB' },
 //   },
 //   {
 //     id: 103, name: 'Santosh Kumar', email: 'santosh@gmail.com', phone: '+91 76543 21098',
 //     category: 'Carpentry', location: 'BTM Layout, Bengaluru', serviceArea: '20 km',
 //     submittedAt: '2025-08-14', status: 'pending',
-//     timeSlots: ['9:00 AM – 11:00 AM', '11:00 AM – 1:00 PM', '2:00 PM – 4:00 PM'],
+//     timeSlots: ['9:00 AM - 11:00 AM', '11:00 AM - 1:00 PM', '2:00 PM - 4:00 PM'],
 //     idProof: { docType: 'Driving License', fileName: 'santosh_dl.jpg', fileSize: '2.1 MB' },
 //   },
 // ];
 
-// ── Status badge helper ──────────────────────────────────────────────────────
+// â”€â”€ Status badge helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ApprovalBadge = ({ status }) => {
   const map = {
     pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -101,7 +101,7 @@ const ApprovalBadge = ({ status }) => {
   );
 };
 
-// ─── FEATURE 4: Pending Service Providers Page ────────────────────────────────
+// â”€â”€â”€ FEATURE 4: Pending Service Providers Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const PendingProvidersPage = () => {
   const [providers, setProviders] = useState([]);
   const [, setLoading] = useState(false);
@@ -131,11 +131,7 @@ export const PendingProvidersPage = () => {
     filter === "all"
       ? providers
       : providers.filter(
-<<<<<<< milestone-3
           (p) => p.approvalStatus?.toLowerCase() === filter.toLowerCase(),
-=======
-          p => p.approvalStatus?.toLowerCase() === filter.toLowerCase()
->>>>>>> main
         );
 
   const counts = {
@@ -154,11 +150,7 @@ const fetchPendingProviders = async () => {
       setLoading(true);
       const res = await api.get("/admin/pending-providers");
       // Fallback to empty array if data is missing to prevent .filter crash
-<<<<<<< milestone-3
       setProviders(Array.isArray(res.data) ? res.data : []);
-=======
-      setProviders(Array.isArray(res.data) ? res.data : []); 
->>>>>>> main
     } catch (err) {
       console.error("Error fetching pending providers:", err);
       setProviders([]);
@@ -414,7 +406,7 @@ const fetchPendingProviders = async () => {
   );
 };
 
-// ─── Admin Users Page ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Admin Users Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const AdminUsersPage = () => {
   const [users, setUsers] = useState(ALL_USERS);
   const [search, setSearch] = useState("");
@@ -569,10 +561,9 @@ export const AdminUsersPage = () => {
   );
 };
 
-// ─── Admin Providers Page ─────────────────────────────────────────────────────
+// â”€â”€â”€ Admin Providers Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const AdminProvidersPage = () => {
   const [providers, setProviders] = useState([]);
-<<<<<<< milestone-3
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
@@ -610,47 +601,6 @@ export const AdminProvidersPage = () => {
 
     return matchSearch && matchFilter;
   });
-=======
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
-
-  useEffect(() => {
-  fetchProviders();
-    }, []);
-
-    const fetchProviders = async () => {
-    try {
-      const res = await api.get("/admin/services"); 
-      setProviders(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error("Error fetching providers:", err);
-      setProviders([]);
-    }
-  };
-  const approveService = async (id) => {
-    try {
-      await api.put(`/admin/services/${id}/approve`);
-      fetchProviders();
-    } catch (err) {
-      console.error("Approve service failed:", err);
-    }
-  };
-    const filtered = providers.filter(p => {
-      const name = p.provider?.name || "";
-      const category = p.category || "";
-      const status = p.status || "";
-
-      const matchSearch =
-        name.toLowerCase().includes(search.toLowerCase()) ||
-        category.toLowerCase().includes(search.toLowerCase());
-
-      const matchFilter =
-        filter === "all" ||
-        status.toLowerCase() === filter;
-
-      return matchSearch && matchFilter;
-    });
->>>>>>> main
 
   const statusStyle = (status) => {
     if (status === "approved")
@@ -667,17 +617,6 @@ export const AdminProvidersPage = () => {
       console.error("Suspend service failed:", err);
     }
   };
-<<<<<<< milestone-3
-=======
-  const suspendService = async (id) => {
-  try {
-    await api.put(`/admin/services/${id}/suspend`);
-    fetchProviders();
-  } catch (err) {
-    console.error("Suspend service failed:", err);
-  }
-  };
->>>>>>> main
   return (
     <div className="space-y-6 animate-fade-in">
       <SectionHeader
@@ -723,17 +662,12 @@ export const AdminProvidersPage = () => {
                   <p className="text-dark-400 text-sm">{p.category}</p>
                 </div>
               </div>
-<<<<<<< milestone-3
               <span
                 className={`badge border ${statusStyle(p.status?.toLowerCase())}`}
               >
                 {p.status?.toLowerCase() === "approved" && (
                   <Shield className="w-3 h-3 mr-1" />
                 )}
-=======
-              <span className={`badge border ${statusStyle(p.status?.toLowerCase())}`}>
-                {p.status?.toLowerCase() === 'approved' && <Shield className="w-3 h-3 mr-1" />}
->>>>>>> main
                 {p.status?.toLowerCase()}
               </span>
             </div>
@@ -755,7 +689,6 @@ export const AdminProvidersPage = () => {
               <button className="flex-1 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-dark-300 hover:text-white text-xs font-medium transition-all flex items-center justify-center gap-1">
                 <Eye className="w-3.5 h-3.5" /> View
               </button>
-<<<<<<< milestone-3
               {p.status?.toLowerCase() === "pending" && (
                 <button
                   onClick={() => approveService(p.id)}
@@ -768,14 +701,6 @@ export const AdminProvidersPage = () => {
                 onClick={() => suspendService(p.id)}
                 className="py-2 px-3 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all"
               >
-=======
-              {p.status?.toLowerCase() === 'pending' && (
-                <button onClick={() => approveService(p.id)} className="flex-1 py-2 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 text-xs font-medium transition-all flex items-center justify-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5" /> Approve
-                </button>
-              )}
-              <button onClick={() => suspendService(p.id)} className="py-2 px-3 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all">
->>>>>>> main
                 <Ban className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -786,7 +711,7 @@ export const AdminProvidersPage = () => {
   );
 };
 
-// ─── Admin Disputes Page ──────────────────────────────────────────────────────
+// â”€â”€â”€ Admin Disputes Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const AdminDisputesPage = () => {
   const [disputes, setDisputes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -837,7 +762,7 @@ export const AdminDisputesPage = () => {
     }
   };
 
-  // ── Loading state ────────────────────────────────────────────────────────
+  // â”€â”€ Loading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -854,7 +779,7 @@ export const AdminDisputesPage = () => {
         subtitle="Handle customer-provider conflicts"
       />
 
-      {/* ── Empty state ──────────────────────────────────────────────────── */}
+      {/* â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {disputes.length === 0 ? (
         <div className="text-center py-16 bg-dark-800 border border-dark-700 rounded-2xl">
           <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-2" />
@@ -903,14 +828,14 @@ export const AdminDisputesPage = () => {
                     {/* Meta info row */}
                     <p className="text-dark-400 text-sm mt-1">
                       Report #{d.id}
-                      {d.targetId   ? ` · ${d.targetType || 'Booking'} #${d.targetId}` : ''}
-                      {d.reportedBy ? ` · Reported by User #${d.reportedBy}` : ''}
-                      {d.createdAt  ? ` · ${new Date(d.createdAt).toLocaleDateString()}` : ''}
+                      {d.targetId   ? ` Â· ${d.targetType || 'Booking'} #${d.targetId}` : ''}
+                      {d.reportedBy ? ` Â· Reported by User #${d.reportedBy}` : ''}
+                      {d.createdAt  ? ` Â· ${new Date(d.createdAt).toLocaleDateString()}` : ''}
                     </p>
                   </div>
                 </div>
 
-                {/* Action buttons — only shown when open */}
+                {/* Action buttons only shown when open */}
                 {isOpen && (
                   <div className="flex gap-3 flex-wrap">
                     <button

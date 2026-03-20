@@ -110,45 +110,7 @@ export const ProviderServicesPage = () => {
       console.error("Delete failed:", err);
     }
   };
-  const handleCloseModal = () => {
-  setShowModal(false);
-  setEditingId(null);
-  setForm({
-    category: '',
-    subcategory: '',
-    description: '',
-    price: '',
-    availability: ''
-    });
-  };
-    const handleSaveService = async () => {
-    try {
-      if (editingId) {
-        await api.put(`/services/${editingId}`, {
-          ...form,
-          price: Number(form.price)
-        });
-      } else {
-        await api.post('/services', {
-          ...form,
-          price: Number(form.price)
-        });
-      }
 
-      fetchMyServices();
-      handleCloseModal();   // 🔥 THIS LINE FIXES EVERYTHING
-    } catch (err) {
-      console.error("Save failed:", err);
-    }
-  };
-  const handleDelete = async (id) => {
-  try {
-    await api.delete(`/services/${id}`);
-    fetchMyServices();  // reload from backend
-  } catch (err) {
-    console.error("Delete failed:", err);
-  }
-  };
   return (
     <div className="space-y-6 animate-fade-in">
       <SectionHeader

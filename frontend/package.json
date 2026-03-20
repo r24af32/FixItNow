@@ -3,12 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-<<<<<<< milestone-3
     "@google/genai": "^1.46.0",
     "@stomp/stompjs": "^7.3.0",
-=======
-    "@stomp/stompjs": "^7.0.0",
->>>>>>> main
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "axios": "^1.6.0",
@@ -19,10 +15,7 @@
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
     "react-leaflet": "^4.2.1",
-<<<<<<< milestone-3
     "react-qr-code": "^2.0.18",
-=======
->>>>>>> main
     "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",
     "recharts": "^2.8.0",

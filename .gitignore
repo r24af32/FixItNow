@@ -15,3 +15,12 @@ backend/target/
 
 # Env files
 .env
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+backend/.env
+backend/.env.local
+!frontend/.env.example
+!backend/.env.example

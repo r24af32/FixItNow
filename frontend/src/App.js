@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Layout } from './components/common/Layout';
@@ -28,11 +28,7 @@ import { AdminUsersPage, AdminProvidersPage, AdminDisputesPage, PendingProviders
 import { AdminChatPage } from './pages/admin/AdminChatPage';
 
 
-<<<<<<< milestone-3
 const ProtectedRoute = ({ children, requiredRole, allowGuest = false }) => {
-=======
-const ProtectedRoute = ({ children, requiredRole }) => {
->>>>>>> main
   const { user, loading } = useAuth();
 
   if (loading) return <PageLoader />;
@@ -56,15 +52,15 @@ const PublicRoute = ({ children }) => {
 
   if (loading) return <PageLoader />;
 
-  // If NOT logged in → allow access
+  // If NOT logged in -> allow access
   if (!user) return children;
 
-  // If logged in → just render nothing to avoid redirect loop
+  // If logged in -> render nothing to avoid redirect loop
   return <Navigate to={`/${user.role}/dashboard`} replace={true} />;
 };
 
 
-// ─── App Routes ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ App Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const AppRoutes = () => (
   <Routes>
     {/* Public */}
@@ -103,7 +99,7 @@ const AppRoutes = () => (
   </Routes>
 );
 
-// ─── Root App ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Root App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const App = () => (
   <BrowserRouter>
     <AuthProvider>
