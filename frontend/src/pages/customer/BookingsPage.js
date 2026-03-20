@@ -4,13 +4,13 @@ import { Calendar, Clock, Star, MessageCircle, X, Loader2, Flag } from "lucide-r
 import { MOCK_SERVICES, api } from "../../utils/api";
 import {
   StatusBadge,
-  StarRating,
   Modal,
   EmptyState,
   SectionHeader,
   ReviewForm,
 } from "../../components/common/index";
 import { ReportForm } from "../../components/reviews/ReportForm";
+import { Toast } from "../../components/common/Toast";
 import { useAuth } from "../../context/AuthContext";
 
 export const CustomerBookingsPage = () => {
@@ -25,7 +25,8 @@ export const CustomerBookingsPage = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [locallyPaid, setLocallyPaid] = useState({}); // 🔥 TRACKS PAYMENT
+  const [locallyPaid, setLocallyPaid] = useState({});
+  const [cancelToast, setCancelToast] = useState(null);
 
   const tabs = [
     { id: "all", label: "All" },
@@ -128,7 +129,7 @@ export const CustomerBookingsPage = () => {
       setBookings(bookings.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b)));
     } catch (err) {
       console.error(err);
-      alert("Failed to cancel booking.");
+      setCancelToast({ message: "Failed to cancel booking. Please try again.", type: "error" });
     }
   };
 
@@ -289,6 +290,15 @@ export const CustomerBookingsPage = () => {
           />
         )}
       </Modal>
+
+      {/* Cancel error toast */}
+      {cancelToast && (
+        <Toast
+          message={cancelToast.message}
+          type={cancelToast.type}
+          onClose={() => setCancelToast(null)}
+        />
+      )}
     </div>
   );
 };

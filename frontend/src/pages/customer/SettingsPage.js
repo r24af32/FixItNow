@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, MapPin, Bell, Shield, LogOut, Camera, Save } from 'lucide-react';
+import { User, MapPin, Bell, Shield, LogOut, Camera, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, Alert, SectionHeader } from '../../components/common/index';
 
@@ -8,12 +8,17 @@ export const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [form, setForm] = useState({ name: user?.name || '', email: user?.email || '', phone: '', location: user?.location || '' });
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [notifications, setNotifications] = useState({ bookingUpdates: true, chatMessages: true, promotions: false, sms: true });
 
   const handleSave = () => {
+    setSaving(true);
     updateUser(form);
     setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setTimeout(() => {
+      setSaved(false);
+      setSaving(false);
+    }, 3000);
   };
 
   const tabs = [
@@ -93,8 +98,12 @@ export const SettingsPage = () => {
                   <input type="text" placeholder="Your area" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} className="input-field" />
                 </div>
               </div>
-              <button onClick={handleSave} className="btn-primary flex items-center gap-2">
-                <Save className="w-4 h-4" /> Save Changes
+              <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center gap-2 disabled:opacity-60">
+                {saving ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                ) : (
+                  <><Save className="w-4 h-4" /> Save Changes</>
+                )}
               </button>
             </div>
           )}
