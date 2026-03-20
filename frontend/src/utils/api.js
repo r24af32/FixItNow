@@ -132,6 +132,7 @@ export const MOCK_BOOKINGS = [
     id: 1,
     service: "Electrical Wiring",
     provider: "Ravi Kumar",
+    providerId: 101,
     date: "2025-08-15",
     timeSlot: "10:00 AM",
     status: "confirmed",

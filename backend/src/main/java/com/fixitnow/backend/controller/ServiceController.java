@@ -7,6 +7,7 @@ import com.fixitnow.backend.entity.User;
 import com.fixitnow.backend.repository.ProviderProfileRepository;
 import com.fixitnow.backend.repository.ServiceRepository;
 import com.fixitnow.backend.repository.UserRepository;
+import com.fixitnow.backend.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
@@ -28,6 +29,9 @@ public class ServiceController {
 
     @Autowired
     private ProviderProfileRepository providerProfileRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     // 🔹 Provider adds service
     @PostMapping
@@ -108,13 +112,20 @@ public class ServiceController {
         return serviceRepository.findByCategory(category);
     }
 
-    // 🔹 Get by ID
+    //  Get by ID
     @GetMapping("/{id}")
     public ServiceResponse getById(@PathVariable Long id) {
         ServiceEntity service = serviceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Service not found"));
 
-        return new ServiceResponse(service);
+        // 🔥 Calculate the REAL completed jobs count!
+        long completedJobs = 0;
+        if (service.getProvider() != null) {
+            completedJobs = bookingRepository.countByProviderIdAndStatus(service.getProvider().getId(), "COMPLETED");
+        }
+
+        // Pass the count into the new constructor
+        return new ServiceResponse(service, completedJobs);
     }
     // @PutMapping("/{id}/approve")
     // public ServiceEntity approveService(@PathVariable Long id) {

@@ -12,7 +12,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useEffect } from "react";
-import { StarRating, Modal } from "../../components/common/index";
+import { StarRating, Modal, ReviewList } from "../../components/common/index";
 import {
   api,
   fetchServiceCatalog,
@@ -71,9 +71,17 @@ export const ServiceDetailPage = () => {
         const res = await api.get(`/services/${id}`);
         const normalized = normalizeServiceCategoryFields(res.data, lookup);
 
-        //  THE FIX: Capture the raw provider ID directly from the backend response!
+        // Capture the raw provider ID directly from the backend response
         normalized.exactProviderId =
           res.data.provider?.id || res.data.providerId || res.data.provider_id;
+
+        // 🔥 THE FIX: Extract nested provider data or use safe fallbacks so the UI is never blank!
+        normalized.providerName = res.data.provider?.name || res.data.providerName || "Service Provider";
+        // 🔥 Now it explicitly looks for the exact variable your DTO sends!
+        normalized.providerLocation = res.data.providerLocation || res.data.provider?.location || res.data.location || "Location not specified";
+        normalized.completedJobs = res.data.completedJobs || res.data.provider?.completedJobs || 0;
+        // 🔥 Check if the backend sent the service area, and format it nicely!
+        normalized.distance = res.data.serviceArea ? `Up to ${res.data.serviceArea} km` : "Local";
 
         setService(normalized);
 
@@ -248,7 +256,7 @@ export const ServiceDetailPage = () => {
                     {service.providerLocation}
                   </p>
                   <p className="text-dark-500 text-xs mt-0.5">
-                    Member since 2021
+                    Member since {service.memberSince}
                   </p>
                 </div>
               </div>
@@ -302,46 +310,7 @@ export const ServiceDetailPage = () => {
             <h3 className="font-display font-semibold text-lg text-white mb-4">
               Customer Reviews
             </h3>
-            <div className="space-y-4">
-              {providerReviews.length === 0 ? (
-                <p className="text-dark-400 text-sm">
-                  No reviews yet for this provider.
-                </p>
-              ) : (
-                providerReviews.map((rev) => {
-                  const reviewerName = rev.customerId
-                    ? `Customer #${rev.customerId}`
-                    : "Customer";
-
-                  return (
-                    <div
-                      key={rev.id}
-                      className="pb-4 border-b border-dark-700 last:border-0 last:pb-0"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-brand-500/20 rounded-full flex items-center justify-center text-sm font-bold text-brand-400">
-                            {reviewerName[0]}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-white">
-                              {reviewerName}
-                            </p>
-                            <p className="text-xs text-dark-500">
-                              {formatReviewDate(rev.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                        <StarRating rating={rev.rating || 0} size="sm" />
-                      </div>
-                      <p className="text-dark-300 text-sm leading-relaxed">
-                        {rev.comment || "No comment provided."}
-                      </p>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            <ReviewList providerId={service.exactProviderId} />
           </div>
         </div>
 
@@ -431,23 +400,31 @@ export const ServiceDetailPage = () => {
       <Modal
         isOpen={bookingModal}
         onClose={() => !confirmed && setBookingModal(false)}
-        title="Confirm Your Booking"
+        title={confirmed ? "Request Status" : "Confirm Your Request"}
         size="md"
       >
         {confirmed ? (
-          <div className="text-center py-6">
-            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-400" />
+          <div className="text-center py-8 animate-fade-in">
+            <div className="relative w-20 h-20 mx-auto mb-5">
+              <div className="absolute inset-0 bg-brand-500/20 rounded-full animate-ping"></div>
+              <div className="relative w-20 h-20 bg-brand-500/20 rounded-full flex items-center justify-center border-2 border-brand-500/50">
+                <Clock className="w-10 h-10 text-brand-400" /> {/* Make sure to import Clock at the top if not already! */}
+              </div>
             </div>
-            <h3 className="font-display font-bold text-xl text-white mb-2">
-              Booking Confirmed!
+            <h3 className="font-display font-bold text-2xl text-white mb-2">
+              Request Sent!
             </h3>
-            <p className="text-dark-400 text-sm">
+            <p className="text-dark-400 text-sm max-w-xs mx-auto leading-relaxed">
+              We've notified <span className="text-white font-medium">{service.providerName}</span>. 
+              You will be alerted as soon as they accept your booking.
+            </p>
+            <p className="text-dark-500 text-xs mt-6">
               Redirecting to your bookings...
             </p>
           </div>
         ) : (
           <div className="space-y-4">
+            {/* ... Keep the existing pre-confirmation UI the same ... */}
             <div className="bg-dark-900/50 rounded-xl p-4 space-y-3">
               {[
                 { label: "Service", value: service.category },
@@ -474,7 +451,7 @@ export const ServiceDetailPage = () => {
                 className="btn-primary flex-1 disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? "Processing..." : "Pay & Confirm"}
+                {loading ? "Sending..." : "Send Request"}
               </button>
             </div>
           </div>

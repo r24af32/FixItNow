@@ -84,6 +84,16 @@ public class AdminController {
 
         return providerProfileRepository.findAll();
         }
+
+        @GetMapping("/users")
+        public ResponseEntity<?> getAllUsers() {
+            try {
+                // Fetch all users from the database so the Admin can chat with them
+                return ResponseEntity.ok(userRepository.findAll());
+            } catch (Exception e) {
+                return ResponseEntity.internalServerError().body("Error fetching users: " + e.getMessage());
+            }
+        }
         
         @GetMapping("/provider-dashboard")
         public List<AdminProviderDashboardDTO> getProviderDashboard() {

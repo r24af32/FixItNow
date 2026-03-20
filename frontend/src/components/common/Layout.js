@@ -31,6 +31,7 @@ const adminLinks = [
     label: "Pending Approvals",
   },
   { path: "/admin/disputes", icon: AlertTriangle, label: "Disputes" },
+  { path: "/admin/chat", icon: MessageCircle, label: "Messages" },
 ];
 
 export const Layout = ({ children }) => {

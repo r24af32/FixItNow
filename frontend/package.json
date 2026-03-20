@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@google/genai": "^1.46.0",
     "@stomp/stompjs": "^7.3.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

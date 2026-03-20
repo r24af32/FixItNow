@@ -25,6 +25,7 @@ import { ProviderServicesPage, ProviderBookingsPage } from './pages/provider/Pro
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsersPage, AdminProvidersPage, AdminDisputesPage, PendingProvidersPage } from './pages/admin/AdminPages';
+import { AdminChatPage } from './pages/admin/AdminChatPage';
 
 
 const ProtectedRoute = ({ children, requiredRole, allowGuest = false }) => {
@@ -91,6 +92,7 @@ const AppRoutes = () => (
     <Route path="/admin/pending-providers" element={<ProtectedRoute requiredRole="admin"><PendingProvidersPage /></ProtectedRoute>} />
     <Route path="/admin/verifications" element={<ProtectedRoute requiredRole="admin"><PendingProvidersPage /></ProtectedRoute>} />
     <Route path="/admin/disputes" element={<ProtectedRoute requiredRole="admin"><AdminDisputesPage /></ProtectedRoute>} />
+    <Route path="/admin/chat" element={<ProtectedRoute requiredRole="admin"><AdminChatPage /></ProtectedRoute>} />
 
     {/* Fallback */}
     <Route path="*" element={<Navigate to="/login" replace />} />

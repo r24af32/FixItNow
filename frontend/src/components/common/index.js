@@ -156,3 +156,7 @@ export const SectionHeader = ({ title, subtitle, action }) => (
 
 // ─── Chatbot ─────────────────────────────────────────────────────────────────
 export { Chatbot } from './Chatbot';
+
+export { Toast } from './Toast';
+export { ReviewForm } from '../reviews/ReviewForm';
+export { ReviewList } from '../reviews/ReviewList';
