@@ -34,6 +34,13 @@ const adminLinks = [
   { path: "/admin/chat", icon: MessageCircle, label: "Messages" },
 ];
 
+const sanitizeNotificationIcon = (icon) => {
+  if (typeof icon !== "string") return "📅";
+  const trimmed = icon.trim();
+  if (!trimmed || /(ð|â|Ã|�)/.test(trimmed)) return "📅";
+  return trimmed;
+};
+
 export const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -309,7 +316,7 @@ const handleNotificationClick = (notification) => {
                                   onClick={() => handleNotificationClick(n)}
                                   className="flex items-start gap-3 p-4 hover:bg-dark-700 cursor-pointer"
                                 >
-                                  <span className="text-lg">{n.icon || "📅"}</span>
+                                  <span className="text-lg">{sanitizeNotificationIcon(n.icon)}</span>
 
                                   <div className="flex-1">
                                     <p className="text-sm text-dark-200">
@@ -335,7 +342,7 @@ const handleNotificationClick = (notification) => {
                                   onClick={() => handleNotificationClick(n)}
                                   className="flex items-start gap-3 p-4 opacity-70 hover:bg-dark-700 cursor-pointer"
                                 >
-                                  <span className="text-lg">{n.icon || "📅"}</span>
+                                  <span className="text-lg">{sanitizeNotificationIcon(n.icon)}</span>
 
                                   <div className="flex-1">
                                     <p className="text-sm text-dark-300">

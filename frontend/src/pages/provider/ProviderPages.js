@@ -27,6 +27,7 @@ import {
   SectionHeader,
   StatusBadge,
 } from "../../components/common/index";
+import { Toast } from "../../components/common/Toast";
 
 // ─── 1. Provider My Services Page ───────────────────────────────────────────────
 export const ProviderServicesPage = () => {
@@ -35,6 +36,8 @@ export const ProviderServicesPage = () => {
   const [editingId, setEditingId] = useState(null);
   const [services, setServices] = useState([]);
   const [categoryCatalog, setCategoryCatalog] = useState(SERVICE_CATEGORIES);
+  const [saving, setSaving] = useState(false);
+  const [serviceError, setServiceError] = useState("");
   const [form, setForm] = useState({
     category: "",
     subcategory: "",
@@ -76,6 +79,7 @@ export const ProviderServicesPage = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingId(null);
+    setServiceError("");
     setForm({
       category: "",
       subcategory: "",
@@ -86,6 +90,10 @@ export const ProviderServicesPage = () => {
   };
 
   const handleSaveService = async () => {
+    if (!form.category) { setServiceError("Please select a category."); return; }
+    if (!form.price)    { setServiceError("Please enter a price."); return; }
+    setSaving(true);
+    setServiceError("");
     try {
       if (editingId) {
         await api.put(`/services/${editingId}`, {
@@ -99,6 +107,10 @@ export const ProviderServicesPage = () => {
       handleCloseModal();
     } catch (err) {
       console.error("Save failed:", err);
+      const msg = err?.response?.data?.message || "Failed to save service. Please try again.";
+      setServiceError(msg);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -110,45 +122,7 @@ export const ProviderServicesPage = () => {
       console.error("Delete failed:", err);
     }
   };
-  const handleCloseModal = () => {
-  setShowModal(false);
-  setEditingId(null);
-  setForm({
-    category: '',
-    subcategory: '',
-    description: '',
-    price: '',
-    availability: ''
-    });
-  };
-    const handleSaveService = async () => {
-    try {
-      if (editingId) {
-        await api.put(`/services/${editingId}`, {
-          ...form,
-          price: Number(form.price)
-        });
-      } else {
-        await api.post('/services', {
-          ...form,
-          price: Number(form.price)
-        });
-      }
 
-      fetchMyServices();
-      handleCloseModal();   // 🔥 THIS LINE FIXES EVERYTHING
-    } catch (err) {
-      console.error("Save failed:", err);
-    }
-  };
-  const handleDelete = async (id) => {
-  try {
-    await api.delete(`/services/${id}`);
-    fetchMyServices();  // reload from backend
-  } catch (err) {
-    console.error("Delete failed:", err);
-  }
-  };
   return (
     <div className="space-y-6 animate-fade-in">
       <SectionHeader
@@ -358,16 +332,26 @@ export const ProviderServicesPage = () => {
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button onClick={handleCloseModal} className="btn-secondary flex-1">
+            <button onClick={handleCloseModal} disabled={saving} className="btn-secondary flex-1">
               Cancel
             </button>
-            <button onClick={handleSaveService} className="btn-primary flex-1">
-              {editingId ? "Update Service" : "Add Service"}
+            <button onClick={handleSaveService} disabled={saving} className="btn-primary flex-1 disabled:opacity-40">
+              {saving ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                editingId ? "Update Service" : "Add Service"
+              )}
             </button>
           </div>
+          {serviceError && (
+            <p className="text-red-400 text-sm text-center">{serviceError}</p>
+          )}
         </div>
-        
       </Modal>
+
       <Modal
         isOpen={!!selectedService}
         onClose={() => setSelectedService(null)}
@@ -376,11 +360,21 @@ export const ProviderServicesPage = () => {
       >
         {selectedService && (
           <div className="space-y-2">
-            <p><strong>Category:</strong> {selectedService.category}</p>
-            <p><strong>Subcategory:</strong> {selectedService.subcategory}</p>
-            <p><strong>Description:</strong> {selectedService.description}</p>
-            <p><strong>Price:</strong> ₹{selectedService.price}</p>
-            <p><strong>Status:</strong> {selectedService.status}</p>
+            <p>
+              <strong>Category:</strong> {selectedService.category}
+            </p>
+            <p>
+              <strong>Subcategory:</strong> {selectedService.subcategory}
+            </p>
+            <p>
+              <strong>Description:</strong> {selectedService.description}
+            </p>
+            <p>
+              <strong>Price:</strong> ₹{selectedService.price}
+            </p>
+            <p>
+              <strong>Status:</strong> {selectedService.status}
+            </p>
           </div>
         )}
       </Modal>
@@ -424,6 +418,8 @@ export const ProviderBookingsPage = () => {
   const [routeModal, setRouteModal] = useState(null);
   const [providerRoute, setProviderRoute] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
+  const [bookingToast, setBookingToast] = useState(null);
+  const [submittingId, setSubmittingId] = useState(null);
 
   // (This fixes your terminal warning for 'isFetchingRoute')
   const [, setIsFetchingRoute] = useState(false);
@@ -434,7 +430,7 @@ export const ProviderBookingsPage = () => {
   // 🔥 1. Get Live GPS and Redraw Map
   const handleLiveLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
+      setBookingToast({ message: "Geolocation is not supported by your browser.", type: "error" });
       return;
     }
     setIsLocating(true);
@@ -486,7 +482,7 @@ export const ProviderBookingsPage = () => {
         setIsLocating(false);
       },
       (err) => {
-        alert("Please allow location access in your browser.");
+        setBookingToast({ message: "Please allow location access in your browser.", type: "error" });
         setIsLocating(false);
       },
     );
@@ -655,13 +651,14 @@ export const ProviderBookingsPage = () => {
 
   // 🔥 The updateStatus function properly placed!
   const updateStatus = async (id, newStatus, endpoint) => {
+    if (submittingId === id) return;
+    setSubmittingId(id);
     try {
       if (endpoint === "accept") {
         await api.put(`/bookings/${id}/accept`);
       } else if (endpoint === "reject") {
         await api.put(`/bookings/${id}/reject`);
       } else {
-        // Wrap the complete call in a try/catch so if it fails, it doesn't crash the whole UI
         try {
             await api.put(`/bookings/${id}/complete`);
         } catch (apiErr) {
@@ -687,12 +684,14 @@ export const ProviderBookingsPage = () => {
               createdAt: Date.now(),
             });
         } catch (notifErr) {
-console.warn("Could not send notification to customer", notifErr);
+          console.warn("Could not send notification to customer", notifErr);
         }
       }
     } catch (err) {
       console.error(`Failed to update booking:`, err);
-      alert("Failed to update booking status. Please try again.");
+      setBookingToast({ message: "Failed to update booking status. Please try again.", type: "error" });
+    } finally {
+      setSubmittingId(null);
     }
   };
 
@@ -799,17 +798,19 @@ console.warn("Could not send notification to customer", notifErr);
                     onClick={() =>
                       updateStatus(booking.id, "confirmed", "accept")
                     }
-                    className="flex-1 py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-all font-medium text-sm"
+                    disabled={submittingId === booking.id}
+                    className="flex-1 py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-all font-medium text-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
                   >
-                    ✓ Accept Booking
+                    {submittingId === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "✓"} Accept Booking
                   </button>
                   <button
                     onClick={() =>
                       updateStatus(booking.id, "cancelled", "reject")
                     }
-                    className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all font-medium text-sm"
+                    disabled={submittingId === booking.id}
+                    className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all font-medium text-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
                   >
-                    ✗ Decline
+                    {submittingId === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "✗"} Decline
                   </button>
                 </div>
               )}
@@ -825,9 +826,10 @@ console.warn("Could not send notification to customer", notifErr);
                     onClick={() =>
                       updateStatus(booking.id, "completed", "update")
                     }
-                    className="flex-1 py-2.5 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500 hover:text-white transition-all font-medium text-sm"
+                    disabled={submittingId === booking.id}
+                    className="flex-1 py-2.5 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500 hover:text-white transition-all font-medium text-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
                   >
-                    Mark as Completed ✓
+                    {submittingId === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Mark as Completed ✓"}
                   </button>
                 </div>
               )}
@@ -916,6 +918,15 @@ console.warn("Could not send notification to customer", notifErr);
           </div>
         )}
       </Modal>
+
+      {/* Booking action toast */}
+      {bookingToast && (
+        <Toast
+          message={bookingToast.message}
+          type={bookingToast.type}
+          onClose={() => setBookingToast(null)}
+        />
+      )}
     </div>
   );
 };

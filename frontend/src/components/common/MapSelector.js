@@ -1,5 +1,4 @@
-import React, { useEffect } from "react";
-<<<<<<< milestone-3
+﻿import React, { useEffect } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -17,39 +16,22 @@ const providerIcon = new L.Icon({
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
   shadowUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-=======
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap, Popup, Polyline } from "react-leaflet";
-import L from "leaflet";
-
-// Blue Provider Icon
-const providerIcon = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
->>>>>>> main
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 });
 
-<<<<<<< milestone-3
 // Red Icon (You / Your Location)
 const userIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
   shadowUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-=======
-// Red User Search Icon
-const userIcon = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
->>>>>>> main
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 });
 
-<<<<<<< milestone-3
 // ... (keep the providerIcon and userIcon definitions at the top)
 
 // Automatically zooms and pans the map to perfectly fit the entire route!
@@ -68,21 +50,14 @@ const ChangeView = ({ center }) => {
   const map = useMap();
   useEffect(() => {
     if (center) map.setView(center, map.getZoom());
-=======
-const ChangeView = ({ center }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (center) map.setView(center, 13);
->>>>>>> main
   }, [center, map]);
   return null;
 };
 
-<<<<<<< milestone-3
 const LocationMarker = ({ currentLocation, isProviderView }) => {
   const activeLocation = currentLocation || { lat: 13.0827, lng: 80.2707 };
 
-  // 🔥 FIX 1: Removed the "click" event listener! The pin will NEVER jump randomly again.
+  // Removed the click event listener to keep marker stable.
 
   return (
     <>
@@ -158,7 +133,7 @@ export default function MapSelector({
           isProviderView={isProviderView}
         />
 
-        {/* 🔥 FIX 2: Stylish Glowing Orange Route! */}
+        {/* Route highlight */}
         {route && route.length > 0 && (
           <>
             <Polyline
@@ -202,7 +177,7 @@ export default function MapSelector({
                     </div>
                   </div>
 
-                  {/* 🔥 FIX 3: Hide price and confusing buttons for the Provider */}
+                  {/* Hide price/actions in provider view */}
                   {!isProviderView && (
                     <div className="flex justify-between items-center mb-4 bg-dark-900/50 p-2 rounded-lg">
                       <span className="text-xs text-dark-400">Starting at</span>
@@ -246,59 +221,3 @@ export default function MapSelector({
     </>
   );
 }
-=======
-const LocationMarker = ({ setLocation, currentLocation }) => {
-  useMapEvents({
-    click(e) {
-      setLocation({ lat: e.latlng.lat, lng: e.latlng.lng });
-    },
-  });
-  if (!currentLocation) return null;
-  return (
-    <Marker position={[currentLocation.lat, currentLocation.lng]} icon={userIcon}>
-      <Popup><b>Your Location</b></Popup>
-    </Marker>
-  );
-};
-
-export default function MapSelector({ services = [], onLocationSelect, mapLocation, onProviderClick, route }) {
-  // Default to India center
-  const defaultLocation = { lat: 20.5937, lng: 78.9629 }; 
-  const currentLocation = mapLocation || defaultLocation;
-
-  return (
-    <MapContainer
-      key="main-map"
-      center={[currentLocation.lat, currentLocation.lng]}
-      zoom={mapLocation ? 13 : 5}
-      style={{ height: "400px", width: "100%", borderRadius: "12px", zIndex: 0 }}
-    >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <ChangeView center={[currentLocation.lat, currentLocation.lng]} />
-      <LocationMarker setLocation={onLocationSelect} currentLocation={mapLocation} />
-
-      {/* THIS DRAWS THE ROAD ROUTE! */}
-      {route && route.length > 0 && (
-        <Polyline positions={route} color="#f97316" weight={5} opacity={0.8} dashArray="10, 10" />
-      )}
-
-      {services.map((service) => {
-        if (!service.providerLat || !service.providerLng) return null;
-        return (
-          <Marker
-            key={service.id}
-            position={[service.providerLat, service.providerLng]}
-            icon={providerIcon}
-            eventHandlers={{ click: () => onProviderClick && onProviderClick(service) }}
-          >
-            <Popup>
-              <b>{service.providerName}</b><br/>
-              {service.category} - ₹{service.price}
-            </Popup>
-          </Marker>
-        );
-      })}
-    </MapContainer>
-  );
-}
->>>>>>> main

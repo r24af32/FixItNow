@@ -337,6 +337,16 @@ const FALLBACK_ICON_BY_NAME = SERVICE_CATEGORIES.reduce((acc, category) => {
   return acc;
 }, {});
 
+const hasMojibake = (value) =>
+  typeof value === "string" && /(ð|â|Ã|�)/.test(value);
+
+const normalizeIconValue = (value, fallback = "🔧") => {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  if (!trimmed || hasMojibake(trimmed)) return fallback;
+  return trimmed;
+};
+
 const coerceToName = (value, idToNameMap = new Map()) => {
   if (value == null) return "";
 
@@ -407,10 +417,19 @@ export const normalizeServiceCategoryFields = (service, lookup = {}) => {
     lookup.subcategoryIdToName || new Map(),
   );
 
+  const fallbackIcon =
+    FALLBACK_ICON_BY_NAME[(category || "").toLowerCase()] || "🔧";
+  const normalizedIcon = normalizeIconValue(
+    service?.image ?? service?.icon,
+    fallbackIcon,
+  );
+
   return {
     ...service,
     category,
     subcategory,
+    image: normalizedIcon,
+    icon: normalizedIcon,
   };
 };
 

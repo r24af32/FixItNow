@@ -126,38 +126,4 @@ public class AdminController {
                 return ResponseEntity.internalServerError().body("Error fetching users: " + e.getMessage());
             }
         }
-        
-        @GetMapping("/provider-dashboard")
-        public List<AdminProviderDashboardDTO> getProviderDashboard() {
-                
-        return adminService.getProviderDashboard();
-        }
-       
-        @GetMapping("/services")
-        public List<ServiceEntity> getAllServices(
-                @RequestParam(required = false) String status) {
-
-        if (status != null) {
-                return serviceRepository.findByStatus(status.toUpperCase());
-        }
-
-        return serviceRepository.findAll();
-        }
-
-        @PutMapping("/services/{id}/approve")
-        public ServiceEntity approveService(@PathVariable Long id) {
-        ServiceEntity service = serviceRepository.findById(id)
-                .orElseThrow();
-        service.setStatus("APPROVED");
-        return serviceRepository.save(service);
-        }
-        @PutMapping("/services/{id}/suspend")
-        public ServiceEntity suspendService(@PathVariable Long id) {
-        ServiceEntity service = serviceRepository.findById(id)
-                .orElseThrow();
-        service.setStatus("SUSPENDED");
-        return serviceRepository.save(service);
-        }
-
-
 }

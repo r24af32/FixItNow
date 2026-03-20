@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Eye,
@@ -16,13 +16,13 @@ import {
 } from "lucide-react";
 import { api } from "../utils/api";
 
-// ─── Time Slots Configuration ─────────────────────────────────────────────────
+// Time Slots Configuration
 const TIME_SLOTS = [
-  { id: "slot_1", label: "9:00 AM – 11:00 AM" },
-  { id: "slot_2", label: "11:00 AM – 1:00 PM" },
-  { id: "slot_3", label: "2:00 PM – 4:00 PM" },
-  { id: "slot_4", label: "4:00 PM – 6:00 PM" },
-  { id: "slot_5", label: "6:00 PM – 8:00 PM" },
+  { id: "slot_1", label: "9:00 AM - 11:00 AM" },
+  { id: "slot_2", label: "11:00 AM - 1:00 PM" },
+  { id: "slot_3", label: "2:00 PM - 4:00 PM" },
+  { id: "slot_4", label: "4:00 PM - 6:00 PM" },
+  { id: "slot_5", label: "6:00 PM - 8:00 PM" },
 ];
 
 const ACCEPTED_DOC_TYPES = ["Aadhaar Card", "PAN Card", "Driving License"];
@@ -34,7 +34,7 @@ const ACCEPTED_MIME = [
   "application/pdf",
 ];
 
-// ─── Success Popup ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Success Popup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SuccessPopup = ({ onClose, role }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -52,7 +52,6 @@ const SuccessPopup = ({ onClose, role }) => (
         <div className="absolute inset-0 rounded-full border-2 border-green-400 animate-ping opacity-20" />
       </div>
       <h3 className="font-display font-bold text-xl text-white mb-3">
-<<<<<<< milestone-3
         {role === "provider"
           ? "Profile Submitted Successfully!"
           : "Account Created Successfully!"}
@@ -72,27 +71,6 @@ const SuccessPopup = ({ onClose, role }) => (
           </span>
         </div>
       )}
-=======
-  {role === "provider"
-    ? "Profile Submitted Successfully!"
-    : "Account Created Successfully!"}
-    </h3>
-
-    <p className="text-dark-300 text-sm leading-relaxed mb-6">
-      {role === "provider"
-        ? "Your profile has been submitted successfully and is under admin verification. You will be notified once approved."
-        : "Your account has been created successfully. You can now login."}
-    </p>
-
-    {role === "provider" && (
-      <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-        <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0" />
-        <span className="text-yellow-400 text-sm font-medium">
-          Status: Pending Admin Approval
-        </span>
-      </div>
-    )}
->>>>>>> main
       <button onClick={onClose} className="btn-primary w-full">
         Got It, Thanks!
       </button>
@@ -100,7 +78,7 @@ const SuccessPopup = ({ onClose, role }) => (
   </div>
 );
 
-// ─── Location Toast Popup ────────────────────────────────────────────────────
+// â”€â”€â”€ Location Toast Popup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const LocationToast = ({ type, onClose }) => {
   const config = {
     success: {
@@ -147,7 +125,6 @@ export const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [selectedSlots, setSelectedSlots] = useState([]);
-<<<<<<< milestone-3
   const [idFile, setIdFile] = useState(null);
   const [idDocType, setIdDocType] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -155,18 +132,8 @@ export const RegisterPage = () => {
   const [geoStatus, setGeoStatus] = useState("idle"); // 'idle' | 'loading' | 'success' | 'denied'
   const navigate = useNavigate();
   const [geoAddress, setGeoAddress] = useState("");
-=======
-  const [idFile, setIdFile]               = useState(null);
-  const [idDocType, setIdDocType]         = useState('');
-  const [showSuccess, setShowSuccess]     = useState(false);
-  const [geoCoords, setGeoCoords]         = useState({ lat: '', lng: '' });
-  const [geoStatus, setGeoStatus]         = useState('idle'); // 'idle' | 'loading' | 'success' | 'denied'
-  const { login } = useAuth();
-  const navigate  = useNavigate();
-  const [geoAddress, setGeoAddress] = useState('');
->>>>>>> main
 
-  // ── Reset form completely when component mounts ──────────────────────────────
+  // â”€â”€ Reset form completely when component mounts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     // Clear all form fields on mount
     setForm({
@@ -189,7 +156,7 @@ export const RegisterPage = () => {
     setGeoStatus("idle");
   }, []); // Empty dependency - runs once on mount
 
-  // ── Reset provider-specific fields when role changes ─────────────────────────
+  // â”€â”€ Reset provider-specific fields when role changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (form.role === "customer") {
       setSelectedSlots([]);
@@ -199,7 +166,7 @@ export const RegisterPage = () => {
     }
   }, [form.role]);
 
-  // ── Slot toggle ──────────────────────────────────────────────────────────────
+  // â”€â”€ Slot toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const toggleSlot = (slotId) => {
     setSelectedSlots((prev) =>
       prev.includes(slotId)
@@ -209,7 +176,7 @@ export const RegisterPage = () => {
     setErrors((prev) => ({ ...prev, timeSlots: "" }));
   };
 
-  // ── File upload handler ──────────────────────────────────────────────────────
+  // â”€â”€ File upload handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -231,9 +198,8 @@ export const RegisterPage = () => {
     setErrors((prev) => ({ ...prev, idFile: "" }));
   };
 
-  // ── Geolocation capture ──────────────────────────────────────────────────────
+  // â”€â”€ Geolocation capture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleGetLocation = () => {
-<<<<<<< milestone-3
     if (!navigator.geolocation) {
       setGeoStatus("denied");
       return;
@@ -268,7 +234,7 @@ export const RegisterPage = () => {
 
           setGeoAddress(addr);
 
-          // 🔥 Auto-fill location field
+          // Auto-fill location field
           setForm((prev) => ({ ...prev, location: addr }));
           setErrors((prev) => ({ ...prev, location: "" }));
         } catch {
@@ -284,59 +250,7 @@ export const RegisterPage = () => {
       { enableHighAccuracy: true, timeout: 10000 },
     );
   };
-=======
-  if (!navigator.geolocation) {
-    setGeoStatus('denied');
-    return;
-  }
-
-  setGeoStatus('loading');
-
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const lat = pos.coords.latitude.toFixed(6);
-      const lng = pos.coords.longitude.toFixed(6);
-
-      setGeoCoords({ lat, lng });
-
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
-          { headers: { 'Accept-Language': 'en' } }
-        );
-
-        const data = await res.json();
-        const a = data.address || {};
-
-        const parts = [
-          a.neighbourhood || a.suburb || a.village || a.town,
-          a.city || a.county,
-          a.state,
-        ].filter(Boolean);
-
-        const addr = parts.join(', ') || data.display_name || `${lat}, ${lng}`;
-
-        setGeoAddress(addr);
-
-        // 🔥 Auto-fill location field
-        setForm(prev => ({ ...prev, location: addr }));
-        setErrors(prev => ({ ...prev, location: '' }));
-
-      } catch {
-        setGeoAddress(`${lat}, ${lng}`);
-        setForm(prev => ({ ...prev, location: `${lat}, ${lng}` }));
-      }
-
-      setGeoStatus('success');
-    },
-    () => {
-      setGeoStatus('denied');
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
-};
->>>>>>> main
-  // ── Validation ───────────────────────────────────────────────────────────────
+  // â”€â”€ Validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Name is required";
@@ -356,8 +270,7 @@ export const RegisterPage = () => {
     return e;
   };
 
-  // ── Submit ───────────────────────────────────────────────────────────────────
-<<<<<<< milestone-3
+  // â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSubmit = async (e) => {
     e.preventDefault();
     const v = validate();
@@ -388,7 +301,7 @@ export const RegisterPage = () => {
       if (form.role === "provider") {
         setShowSuccess(true);
       } else {
-        // 👇 Show popup for customer also
+        // Show popup for customer also
         setShowSuccess(true);
       }
     } catch (err) {
@@ -419,56 +332,6 @@ export const RegisterPage = () => {
       setLoading(false);
     }
   };
-=======
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  const v = validate();
-  if (Object.keys(v).length > 0) {
-    setErrors(v);
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    const payload = {
-      name: form.name,
-      email: form.email,
-      password: form.password,
-      confirmPassword: form.confirmPassword,
-      role: form.role.toUpperCase(),
-      location: form.location,
-      category: form.role === "provider" ? form.category : null,
-      serviceArea: form.role === "provider" ? form.serviceArea : null,
-      timeSlots: form.role === "provider" ? selectedSlots : [],
-      idDocType: form.role === "provider" ? idDocType : null,
-      latitude: geoCoords.lat || null,
-      longitude: geoCoords.lng || null
-    };
-
-    const response = await api.post("/auth/register", payload);
-
-    if (form.role === "provider") {
-      setShowSuccess(true);
-    } else {
-      // 👇 Show popup for customer also
-      setShowSuccess(true);
-    }
-  } catch (err) {
-  console.error("REGISTER ERROR:", err.response);
-
-  const message =
-    err.response?.data ||
-    err.response?.data?.message ||
-    "Registration failed. Try again.";
-
-  setErrors({ general: message });
-  }finally {
-    setLoading(false);
-  }
-};
-
->>>>>>> main
 
   const handleSuccessClose = () => {
     setShowSuccess(false);
@@ -485,13 +348,9 @@ const handleSubmit = async (e) => {
         <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-brand-500/5 rounded-full blur-3xl" />
       </div>
 
-<<<<<<< milestone-3
       {showSuccess && (
         <SuccessPopup onClose={handleSuccessClose} role={form.role} />
       )}
-=======
-      {showSuccess && <SuccessPopup onClose={handleSuccessClose} role={form.role}  />}
->>>>>>> main
 
       <div className="w-full max-w-lg relative z-10 animate-slide-up py-8">
         {/* Logo */}
@@ -590,7 +449,7 @@ const handleSubmit = async (e) => {
               )}
             </div>
 
-            {/* ── Precise Location (all roles) ─────────────────────────────── */}
+            {/* â”€â”€ Precise Location (all roles) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="p-4 bg-dark-900/50 rounded-xl border border-dark-700">
               <div className="flex items-center gap-2 mb-1">
                 <Navigation className="w-4 h-4 text-brand-400" />
@@ -603,7 +462,7 @@ const handleSubmit = async (e) => {
                 accurately
               </p>
 
-              {/* Use Current Location button — matches existing btn-primary style */}
+              {/* Use Current Location button matching existing btn-primary style */}
               <button
                 type="button"
                 onClick={handleGetLocation}
@@ -632,12 +491,8 @@ const handleSubmit = async (e) => {
                 </div>
               )}
 
-              {/* Coordinates display — read-only, shown only after capture */}
-<<<<<<< milestone-3
+              {/* Coordinates display, read-only, shown only after capture */}
               {geoStatus === "success" && (
-=======
-              {geoStatus === 'success' && (
->>>>>>> main
                 <div>
                   <label className="text-xs font-medium text-dark-400 mb-1 block">
                     Detected Location
@@ -652,7 +507,7 @@ const handleSubmit = async (e) => {
               )}
             </div>
 
-            {/* ── Provider-specific fields ─────────────────────────────────── */}
+            {/* â”€â”€ Provider-specific fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             {form.role === "provider" && (
               <>
                 {/* Category + Service Area */}
@@ -710,7 +565,7 @@ const handleSubmit = async (e) => {
                   </div>
                 </div>
 
-                {/* ── FEATURE 1: Time Slot Selection ───────────────────────── */}
+                {/* â”€â”€ FEATURE 1: Time Slot Selection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <div className="p-4 bg-dark-900/50 rounded-xl border border-dark-700">
                   <div className="flex items-center gap-2 mb-1">
                     <Clock className="w-4 h-4 text-brand-400" />
@@ -757,7 +612,7 @@ const handleSubmit = async (e) => {
                   )}
                 </div>
 
-                {/* ── FEATURE 2: ID Proof Upload ────────────────────────────── */}
+                {/* â”€â”€ FEATURE 2: ID Proof Upload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <div className="p-4 bg-dark-900/50 rounded-xl border border-dark-700">
                   <div className="flex items-center gap-2 mb-1">
                     <FileText className="w-4 h-4 text-brand-400" />

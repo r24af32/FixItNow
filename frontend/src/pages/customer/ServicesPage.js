@@ -42,6 +42,7 @@ export const ServicesPage = () => {
   // NEW: Routing states
   const [route, setRoute] = useState(null);
   const [routeDistance, setRouteDistance] = useState("");
+  const [locationError, setLocationError] = useState("");
 
   const typingTimeoutRef = useRef(null);
 
@@ -148,6 +149,7 @@ export const ServicesPage = () => {
 
   // --- NEW: THE GPS "LOCATE ME" FUNCTION ---
   const handleLocateMe = () => {
+    setLocationError("");
     if ("geolocation" in navigator) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
@@ -179,21 +181,19 @@ export const ServicesPage = () => {
           fetchServices(coords);
         },
         (error) => {
-          alert(
-            "Please allow location access in your browser to use this feature.",
-          );
+          setLocationError("Please allow location access in your browser to use this feature.");
           setLoading(false);
         },
       );
     } else {
-      alert("Geolocation is not supported by your browser.");
+      setLocationError("Geolocation is not supported by your browser.");
     }
   };
 
   // --- NEW: DRAW THE ROAD ROUTE ---
   const handleProviderClick = async (service) => {
     if (!mapLocation) {
-      alert("Please set your location first so we can draw the route!");
+      setLocationError("Please set your location first so we can draw the route!");
       return;
     }
     try {
@@ -344,26 +344,9 @@ export const ServicesPage = () => {
                   Verified Only
                 </span>
               </label>
-              <input 
-                type="range" min="100" max="5000" step="100" 
-                value={maxPrice} onChange={e => setMaxPrice(Number(e.target.value))} 
-                className="w-full accent-brand-500" 
-              />
             </div>
 
-            {/* Verified Toggle */}
-            <div className="flex items-center h-10">
-              <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-dark-700 w-full transition-colors">
-                <input 
-                  type="checkbox" checked={verifiedOnly} 
-                  onChange={e => setVerifiedOnly(e.target.checked)} 
-                  className="rounded border-dark-600 text-brand-500 bg-dark-900" 
-                />
-                <span className="text-sm font-medium text-white">Verified Only</span>
-              </label>
-            </div>
-
-            {/* NEW: CLEAR ALL BUTTON */}
+            {/* CLEAR ALL BUTTON */}
             <div className="flex justify-end h-10">
               <button
                 onClick={handleClearFilters}
@@ -442,6 +425,11 @@ export const ServicesPage = () => {
           <span className="hidden sm:inline">Locate Me</span>
         </button>
       </div>
+      {locationError && (
+        <p className="text-red-400 text-sm flex items-center gap-1.5 animate-fade-in">
+          ⚠️ {locationError}
+        </p>
+      )}
 
       {/* Category Pills & Filters */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">

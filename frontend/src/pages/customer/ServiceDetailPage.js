@@ -1,5 +1,4 @@
-<<<<<<< milestone-3
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext"; // Add this line
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
@@ -30,20 +29,6 @@ const TIME_SLOTS = [
   "3:00 PM",
   "4:00 PM",
   "5:00 PM",
-=======
-import React, { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Star, Shield, Clock, CheckCircle, Calendar, MessageCircle } from 'lucide-react';
-import { useEffect } from 'react';
-import { StarRating, Modal } from '../../components/common/index';
-import { api, SERVICE_CATEGORIES } from '../../utils/api';
-
-const TIME_SLOTS = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
-const REVIEWS = [
-  { id: 1, name: 'Priya N.', rating: 5, comment: 'Excellent work! Very professional and completed on time.', date: '2 days ago' },
-  { id: 2, name: 'Arun M.', rating: 4, comment: 'Good service, arrived a bit late but the work quality was great.', date: '1 week ago' },
-  { id: 3, name: 'Kavita S.', rating: 5, comment: 'Highly recommend! Fixed the issue quickly and explained everything.', date: '2 weeks ago' },
->>>>>>> main
 ];
 
 const formatReviewDate = (dateValue) => {
@@ -72,7 +57,6 @@ const formatReviewDate = (dateValue) => {
 export const ServiceDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-<<<<<<< milestone-3
   const { user } = useAuth();
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -91,12 +75,12 @@ export const ServiceDetailPage = () => {
         normalized.exactProviderId =
           res.data.provider?.id || res.data.providerId || res.data.provider_id;
 
-        // 🔥 THE FIX: Extract nested provider data or use safe fallbacks so the UI is never blank!
+        // Extract nested provider data with safe fallbacks.
         normalized.providerName = res.data.provider?.name || res.data.providerName || "Service Provider";
-        // 🔥 Now it explicitly looks for the exact variable your DTO sends!
+        // Read provider id from the DTO shape.
         normalized.providerLocation = res.data.providerLocation || res.data.provider?.location || res.data.location || "Location not specified";
         normalized.completedJobs = res.data.completedJobs || res.data.provider?.completedJobs || 0;
-        // 🔥 Check if the backend sent the service area, and format it nicely!
+        // Format service area for display.
         normalized.distance = res.data.serviceArea ? `Up to ${res.data.serviceArea} km` : "Local";
 
         setService(normalized);
@@ -123,25 +107,6 @@ export const ServiceDetailPage = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
   const [notes, setNotes] = useState("");
-=======
-  const [service, setService] = useState(null);
-const [loading, setLoading] = useState(true);
-
-useEffect(() => {
-  api.get(`/services/${id}`)
-    .then(res => {
-      setService(res.data);
-      setLoading(false);
-    })
-    .catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
-}, [id]);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedSlot, setSelectedSlot] = useState('');
-  const [notes, setNotes] = useState('');
->>>>>>> main
   const [bookingModal, setBookingModal] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
@@ -154,14 +119,14 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      // 🔥 FIX 1: Only send what the new Backend DTO expects (plus the date!)
+      // Send only fields expected by the backend DTO.
       const bookingPayload = {
         serviceId: service.id,
         bookingDate: selectedDate,
         timeSlot: selectedSlot,
       };
 
-      // 🔥 FIX 2: Removed "/create" to perfectly match the teammate's new Controller
+      // Endpoint aligns with current controller mapping.
       const res = await api.post("/bookings", bookingPayload);
 
       const notifications =
@@ -192,7 +157,6 @@ useEffect(() => {
   const maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 30);
 
-<<<<<<< milestone-3
   const computedReviewCount = providerReviews.length;
   const computedAverageRating =
     computedReviewCount > 0
@@ -201,9 +165,6 @@ useEffect(() => {
       : Number(service?.rating || 0);
 
   if (loading) {
-=======
-    if (loading) {
->>>>>>> main
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-white text-lg">Loading service...</p>
@@ -213,13 +174,7 @@ useEffect(() => {
 
   if (!service) {
     return (
-<<<<<<< milestone-3
       <div className="text-center py-20 text-red-400">Service not found.</div>
-=======
-      <div className="text-center py-20 text-red-400">
-        Service not found.
-      </div>
->>>>>>> main
     );
   }
 
@@ -293,7 +248,6 @@ useEffect(() => {
                   👤
                 </div>
                 <div>
-<<<<<<< milestone-3
                   <p className="font-semibold text-white text-lg">
                     {service.providerName}
                   </p>
@@ -304,11 +258,6 @@ useEffect(() => {
                   <p className="text-dark-500 text-xs mt-0.5">
                     Member since {service.memberSince}
                   </p>
-=======
-                  <p className="font-semibold text-white text-lg">{service.providerName}</p>
-                  <p className="text-dark-400 text-sm flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{service.providerLocation}</p>
-                  <p className="text-dark-500 text-xs mt-0.5">Member since 2021</p>
->>>>>>> main
                 </div>
               </div>
               <Link
@@ -478,21 +427,12 @@ useEffect(() => {
             {/* ... Keep the existing pre-confirmation UI the same ... */}
             <div className="bg-dark-900/50 rounded-xl p-4 space-y-3">
               {[
-<<<<<<< milestone-3
                 { label: "Service", value: service.category },
                 { label: "Provider", value: service.providerName },
                 { label: "Date", value: selectedDate },
                 { label: "Time", value: selectedSlot },
                 { label: "Amount", value: `₹${service.price}` },
               ].map((item) => (
-=======
-                { label: 'Service', value: service.category },
-                { label: 'Provider', value: service.providerName },
-                { label: 'Date', value: selectedDate },
-                { label: 'Time', value: selectedSlot },
-                { label: 'Amount', value: `₹${service.price}` },
-              ].map(item => (
->>>>>>> main
                 <div key={item.label} className="flex justify-between text-sm">
                   <span className="text-dark-400">{item.label}</span>
                   <span className="text-white font-medium">{item.value}</span>
