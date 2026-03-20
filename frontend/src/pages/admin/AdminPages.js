@@ -11,6 +11,7 @@ import {
   FileText,
   Download,
   XCircle,
+  Loader2,
 } from "lucide-react";
 import { Avatar, SectionHeader, Modal } from "../../components/common/index";
 import { useEffect } from "react";
@@ -712,43 +713,64 @@ export const AdminProvidersPage = () => {
 
 // ─── Admin Disputes Page ──────────────────────────────────────────────────────
 export const AdminDisputesPage = () => {
-  const [disputes, setDisputes] = useState([
-    {
-      id: 1,
-      customer: "Priya Nair",
-      provider: "Ravi Kumar",
-      issue: "Service quality not as promised. Work left incomplete.",
-      date: "2025-08-14",
-      severity: "high",
-      status: "open",
-      bookingId: 1,
-    },
-    {
-      id: 2,
-      customer: "Arjun Mehta",
-      provider: "Suresh Babu",
-      issue: "Provider did not show up at the scheduled time.",
-      date: "2025-08-12",
-      severity: "high",
-      status: "open",
-      bookingId: 2,
-    },
-    {
-      id: 3,
-      customer: "Kavita Singh",
-      provider: "Anil Sharma",
-      issue: "Overcharged compared to quoted price.",
-      date: "2025-08-10",
-      severity: "medium",
-      status: "resolved",
-      bookingId: 3,
-    },
-  ]);
+  const [disputes, setDisputes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState({});
 
-  const resolve = (id) =>
-    setDisputes(
-      disputes.map((d) => (d.id === id ? { ...d, status: "resolved" } : d)),
+  useEffect(() => {
+    fetchDisputes();
+  }, []);
+
+  const fetchDisputes = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/admin/reports');
+      setDisputes(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error('Failed to load reports:', err);
+      setDisputes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResolve = async (id) => {
+    setActionLoading((prev) => ({ ...prev, [id]: 'resolve' }));
+    try {
+      await api.put(`/admin/reports/${id}/resolve`);
+      setDisputes((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, status: 'resolved' } : d))
+      );
+    } catch (err) {
+      console.error('Resolve failed:', err);
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [id]: null }));
+    }
+  };
+
+  const handleDismiss = async (id) => {
+    setActionLoading((prev) => ({ ...prev, [id]: 'dismiss' }));
+    try {
+      await api.put(`/admin/reports/${id}/dismiss`);
+      setDisputes((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, status: 'dismissed' } : d))
+      );
+    } catch (err) {
+      console.error('Dismiss failed:', err);
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [id]: null }));
+    }
+  };
+
+  // ── Loading state ────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-brand-400 animate-spin mb-3" />
+        <p className="text-dark-400">Loading disputes...</p>
+      </div>
     );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -756,57 +778,95 @@ export const AdminDisputesPage = () => {
         title="Dispute Management"
         subtitle="Handle customer-provider conflicts"
       />
-      <div className="space-y-4">
-        {disputes.map((d) => (
-          <div
-            key={d.id}
-            className={`bg-dark-800 rounded-2xl p-5 border ${d.status === "resolved" ? "border-green-500/20 opacity-70" : "border-dark-700"}`}
-          >
-            <div className="flex items-start gap-3 mb-4">
+
+      {/* ── Empty state ──────────────────────────────────────────────────── */}
+      {disputes.length === 0 ? (
+        <div className="text-center py-16 bg-dark-800 border border-dark-700 rounded-2xl">
+          <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-2" />
+          <p className="text-dark-400">No disputes reported at this time.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {disputes.map((d) => {
+            const isOpen      = d.status === 'open' || d.status === 'OPEN';
+            const isResolved  = d.status === 'resolved' || d.status === 'RESOLVED';
+            const isDismissed = d.status === 'dismissed' || d.status === 'DISMISSED';
+
+            return (
               <div
-                className={`p-2 rounded-xl ${d.severity === "high" ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400"}`}
+                key={d.id}
+                className={`bg-dark-800 rounded-2xl p-5 border ${
+                  isResolved  ? 'border-green-500/20 opacity-70' :
+                  isDismissed ? 'border-dark-600 opacity-60'     :
+                                'border-dark-700'
+                }`}
               >
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span
-                    className={`badge border ${d.severity === "high" ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"}`}
-                  >
-                    {d.severity} priority
-                  </span>
-                  <span
-                    className={`badge border ${d.status === "resolved" ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30"}`}
-                  >
-                    {d.status}
-                  </span>
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="p-2 rounded-xl bg-red-500/20 text-red-400">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    {/* Status badges row */}
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="badge border bg-red-500/20 text-red-400 border-red-500/30">
+                        {d.targetType || 'booking'}
+                      </span>
+                      <span
+                        className={`badge border ${
+                          isResolved  ? 'bg-green-500/20 text-green-400 border-green-500/30'  :
+                          isDismissed ? 'bg-dark-600 text-dark-400 border-dark-500'            :
+                                        'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                        }`}
+                      >
+                        {d.status?.toLowerCase() || 'open'}
+                      </span>
+                    </div>
+
+                    {/* Reason / issue text */}
+                    <p className="text-white font-medium">{d.reason}</p>
+
+                    {/* Meta info row */}
+                    <p className="text-dark-400 text-sm mt-1">
+                      Report #{d.id}
+                      {d.targetId   ? ` · ${d.targetType || 'Booking'} #${d.targetId}` : ''}
+                      {d.reportedBy ? ` · Reported by User #${d.reportedBy}` : ''}
+                      {d.createdAt  ? ` · ${new Date(d.createdAt).toLocaleDateString()}` : ''}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-white font-medium">{d.issue}</p>
-                <p className="text-dark-400 text-sm mt-1">
-                  {d.customer} vs {d.provider} • {d.date} • Booking #
-                  {d.bookingId}
-                </p>
+
+                {/* Action buttons — only shown when open */}
+                {isOpen && (
+                  <div className="flex gap-3 flex-wrap">
+                    <button
+                      onClick={() => handleResolve(d.id)}
+                      disabled={!!actionLoading[d.id]}
+                      className="flex-1 py-2 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 text-sm font-medium transition-all disabled:opacity-40 flex items-center justify-center gap-1.5"
+                    >
+                      {actionLoading[d.id] === 'resolve' ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Resolving...</>
+                      ) : (
+                        <><CheckCircle className="w-3.5 h-3.5" /> Resolve</>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleDismiss(d.id)}
+                      disabled={!!actionLoading[d.id]}
+                      className="flex-1 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 text-dark-300 hover:text-white border border-dark-600 text-sm font-medium transition-all disabled:opacity-40 flex items-center justify-center gap-1.5"
+                    >
+                      {actionLoading[d.id] === 'dismiss' ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Dismissing...</>
+                      ) : (
+                        <><XCircle className="w-3.5 h-3.5" /> Dismiss</>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-            {d.status === "open" && (
-              <div className="flex gap-3 flex-wrap">
-                <button
-                  onClick={() => resolve(d.id)}
-                  className="flex-1 py-2 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 text-sm font-medium transition-all"
-                >
-                  Mark Resolved
-                </button>
-                <button className="flex-1 py-2 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30 text-sm font-medium transition-all">
-                  Issue Refund
-                </button>
-                <button className="flex-1 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-sm font-medium transition-all">
-                  Suspend Provider
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

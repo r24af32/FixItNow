@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Clock, Star, MessageCircle, X, Loader2 } from "lucide-react";
+import { Calendar, Clock, Star, MessageCircle, X, Loader2, Flag } from "lucide-react";
 import { MOCK_SERVICES, api } from "../../utils/api";
 import {
   StatusBadge,
@@ -10,15 +10,18 @@ import {
   SectionHeader,
   ReviewForm,
 } from "../../components/common/index";
+import { ReportForm } from "../../components/reviews/ReportForm";
 import { useAuth } from "../../context/AuthContext";
 
 export const CustomerBookingsPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("all");
   const [reviewModal, setReviewModal] = useState(null);
+  const [reportModal, setReportModal] = useState(null);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [submitted, setSubmitted] = useState({});
+  const [reportedBookings, setReportedBookings] = useState({});
   const [submittingReview, setSubmittingReview] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -211,6 +214,14 @@ export const CustomerBookingsPage = () => {
                     {booking.status === "completed" && submitted[booking.id] && (
                         <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium">✓ Review submitted</span>
                     )}
+                    {booking.status === "completed" && !reportedBookings[booking.id] && (
+                        <button onClick={() => setReportModal(booking)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium">
+                          <Flag className="w-4 h-4" /> Report Issue
+                        </button>
+                    )}
+                    {booking.status === "completed" && reportedBookings[booking.id] && (
+                        <span className="flex items-center gap-1.5 text-dark-400 text-sm font-medium">✓ Issue reported</span>
+                    )}
 
                     {/* Pending Actions */}
                     {booking.status === "pending" && (
@@ -261,6 +272,20 @@ export const CustomerBookingsPage = () => {
               setReviewModal(null);
             }} 
             onCancel={() => setReviewModal(null)} 
+          />
+        )}
+      </Modal>
+
+      {/* Report Issue Modal */}
+      <Modal isOpen={!!reportModal} onClose={() => setReportModal(null)} title="Report an Issue" size="sm">
+        {reportModal && (
+          <ReportForm
+            booking={reportModal}
+            onSuccess={() => {
+              setReportedBookings({ ...reportedBookings, [reportModal.id]: true });
+              setReportModal(null);
+            }}
+            onCancel={() => setReportModal(null)}
           />
         )}
       </Modal>
