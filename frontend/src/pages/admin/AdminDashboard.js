@@ -32,8 +32,24 @@ const PENDING_VERIFICATIONS = [
 ];
 
 const ACTIVE_DISPUTES = [
-  { id: 1, customer: 'Priya N.', provider: 'Ravi K.', issue: 'Service quality not as described', date: '2025-08-14', severity: 'medium' },
-  { id: 2, customer: 'Arjun M.', provider: 'Suresh B.', issue: 'Provider did not show up', date: '2025-08-12', severity: 'high' },
+  {
+    id: 1,
+    customer: 'Priya N.',
+    provider: 'Ravi K.',
+    issue: 'Service quality not as described',
+    date: '2025-08-14',
+    severity: 'med',
+    status: 'Pending'
+  },
+  {
+    id: 2,
+    customer: 'Arjun M.',
+    provider: 'Suresh B.',
+    issue: 'Provider did not show up',
+    date: '2025-08-12',
+    severity: 'high',
+    status: 'In Progress'
+  }
 ];
 
 const RECENT_USERS = [
@@ -56,6 +72,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export const AdminDashboard = () => {
+  const [disputes, setDisputes] = useState(ACTIVE_DISPUTES);
   const [verifications, setVerifications] = useState(PENDING_VERIFICATIONS);
 
   const approveProvider = (id) => setVerifications(v => v.filter(p => p.id !== id));
@@ -156,7 +173,7 @@ export const AdminDashboard = () => {
       <div>
         <SectionHeader title="Active Disputes" subtitle="Resolve customer-provider conflicts" />
         <div className="space-y-3">
-          {ACTIVE_DISPUTES.map(dispute => (
+          {disputes.map(dispute => (
             <div key={dispute.id} className="bg-dark-800 border border-dark-700 rounded-xl p-4 hover:border-dark-600 transition-all">
               <div className="flex items-start gap-4 flex-wrap">
                 <div className={`p-2.5 rounded-xl ${dispute.severity === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
@@ -164,6 +181,7 @@ export const AdminDashboard = () => {
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-white text-sm">{dispute.issue}</p>
+                  <p className="text-xs text-dark-400">Status: <span className="font-semibold">{dispute.status}</span></p>
                   <p className="text-dark-400 text-xs mt-1">
                     {dispute.customer} vs {dispute.provider} • {dispute.date}
                   </p>
@@ -172,9 +190,30 @@ export const AdminDashboard = () => {
                   <span className={`badge ${dispute.severity === 'high' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'} border`}>
                     {dispute.severity}
                   </span>
-                  <button className="px-3 py-1.5 bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500/30 rounded-lg text-xs font-medium">
-                    Resolve
-                  </button>
+                  <button
+                   className="px-3 py-1.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded"
+                   onClick={() =>
+                   setDisputes(prev =>
+                   prev.map(d =>
+                   d.id === dispute.id ? { ...d, status: "Resolved" } : d
+                   )
+                  )
+                 }
+                 >
+                 Resolve
+                </button>
+                <button
+                 className="px-3 py-1.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded"
+                 onClick={() =>
+                  setDisputes(prev =>
+                  prev.map(d =>
+                  d.id === dispute.id ? { ...d, status: "In Progress" } : d
+                  )
+                )
+                }
+                >
+                In Progress
+                </button>
                 </div>
               </div>
             </div>
