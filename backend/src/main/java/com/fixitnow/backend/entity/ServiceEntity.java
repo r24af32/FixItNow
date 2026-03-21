@@ -88,6 +88,10 @@ public class ServiceEntity {
         return createdAt;
     }
 
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public User getProvider() {
         return provider;
     }

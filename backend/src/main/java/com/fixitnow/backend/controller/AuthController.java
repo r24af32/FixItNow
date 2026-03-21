@@ -32,6 +32,31 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    private AuthResponse buildAuthResponse(User user, ProviderProfile profile) {
+        boolean active = !Boolean.FALSE.equals(user.getActive());
+        String approvalStatus = profile != null ? profile.getApprovalStatus() : null;
+        boolean providerLimited = user.getRole() == Role.PROVIDER
+                && (approvalStatus == null || !"APPROVED".equalsIgnoreCase(approvalStatus));
+        boolean accessLimited = !active || providerLimited;
+
+        String accessMessage = null;
+        if (accessLimited) {
+            accessMessage = "Your account is suspended or pending approval. You can message admin, but booking and service features are disabled until approval.";
+        }
+
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        return new AuthResponse(
+                token,
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole().name().toLowerCase(),
+                active,
+                approvalStatus,
+                accessLimited,
+                accessMessage);
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
 
@@ -94,17 +119,12 @@ public class AuthController {
             providerProfileRepository.save(profile);
         }
 
-        String token = jwtUtil.generateToken(
-                savedUser.getEmail(),
-                savedUser.getRole().name());
+        ProviderProfile savedProfile = null;
+        if (savedUser.getRole() == Role.PROVIDER) {
+            savedProfile = providerProfileRepository.findByUser(savedUser).orElse(null);
+        }
 
-        return ResponseEntity.ok(
-                new AuthResponse(
-                        token,
-                        savedUser.getId(),
-                        savedUser.getName(),
-                        savedUser.getEmail(),
-                        savedUser.getRole().name().toLowerCase()));
+        return ResponseEntity.ok(buildAuthResponse(savedUser, savedProfile));
 
     }
 
@@ -129,33 +149,18 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid password");
         }
 
+        ProviderProfile profile = null;
         if (user.getRole() == Role.PROVIDER) {
-
-            ProviderProfile profile = providerProfileRepository
+            profile = providerProfileRepository
                     .findByUser(user)
                     .orElse(null);
 
             if (profile == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Provider profile not found");
             }
-
-            if (!"APPROVED".equals(profile.getApprovalStatus())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body("Your account is not approved by admin yet");
-            }
         }
 
-        String token = jwtUtil.generateToken(
-                user.getEmail(),
-                user.getRole().name());
-
-        return ResponseEntity.ok(
-            new AuthResponse(
-                token,
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getRole().name().toLowerCase()));
+        return ResponseEntity.ok(buildAuthResponse(user, profile));
 
     }
 }

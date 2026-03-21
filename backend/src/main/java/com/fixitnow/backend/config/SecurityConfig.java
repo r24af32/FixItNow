@@ -24,9 +24,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/api/users/admin-support").permitAll()
                         .requestMatchers("/api/reviews/**").permitAll()
                         .requestMatchers("/api/services/**").permitAll() // public listing
                         .requestMatchers("/api/catalog/**").permitAll()
+                        // Chat history must require login but should be available for any role.
+                        .requestMatchers("/api/messages/**").authenticated()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

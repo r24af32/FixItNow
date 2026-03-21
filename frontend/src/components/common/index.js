@@ -118,9 +118,13 @@ export const EmptyState = ({ icon = '📭', title, description, action }) => (
 // ─── Avatar ──────────────────────────────────────────────────────────────────
 export const Avatar = ({ name = '', size = 'md', src }) => {
   const sizeMap = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-14 h-14 text-base', xl: 'w-20 h-20 text-xl' };
-  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  // Remove emojis from name before extracting initials
+  const cleanName = name.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
+  const initials = cleanName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || name.charAt(0).toUpperCase();
   const colors = ['bg-brand-500', 'bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-pink-500'];
-  const color = colors[name.charCodeAt(0) % colors.length];
+  // Use cleaned name for color calculation to ensure consistent colors
+  const colorIndex = (cleanName || name).charCodeAt(0) % colors.length;
+  const color = colors[colorIndex];
 
   if (src) return <img src={src} alt={name} className={`${sizeMap[size]} rounded-full object-cover`} />;
   return (

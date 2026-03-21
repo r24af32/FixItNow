@@ -33,6 +33,19 @@ public class ServiceController {
     @Autowired
     private BookingRepository bookingRepository;
 
+    private void ensureProviderServiceAccess(User provider) {
+        if (Boolean.FALSE.equals(provider.getActive())) {
+            throw new RuntimeException("Your account is suspended. Please wait for admin approval");
+        }
+
+        ProviderProfile profile = providerProfileRepository.findByUser(provider)
+                .orElseThrow(() -> new RuntimeException("Provider profile not found"));
+
+        if (!"APPROVED".equalsIgnoreCase(profile.getApprovalStatus())) {
+            throw new RuntimeException("Your provider account is pending admin approval");
+        }
+    }
+
     // 🔹 Provider adds service
     @PostMapping
     public ServiceEntity addService(@RequestBody ServiceRequest request,
@@ -46,6 +59,8 @@ public class ServiceController {
         if (provider.getRole() != Role.PROVIDER) {
             throw new RuntimeException("Only providers can add services");
         }
+
+        ensureProviderServiceAccess(provider);
 
         ServiceEntity service = new ServiceEntity();
         service.setCategory(request.getCategory());
@@ -152,6 +167,8 @@ public class ServiceController {
         User provider = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        ensureProviderServiceAccess(provider);
+
         return serviceRepository.findByProviderId(provider.getId())
                 .stream()
                 .map(ServiceResponse::new)
@@ -165,6 +182,8 @@ public class ServiceController {
 
         User provider = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        ensureProviderServiceAccess(provider);
 
         ServiceEntity service = serviceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Service not found"));
@@ -186,6 +205,8 @@ public class ServiceController {
 
         User provider = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        ensureProviderServiceAccess(provider);
 
         ServiceEntity service = serviceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Service not found"));

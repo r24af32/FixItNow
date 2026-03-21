@@ -52,12 +52,19 @@ export const Layout = ({ children }) => {
   const [showAllNotifications, setShowAllNotifications] = useState(false);
 
   const role = user?.role || "customer";
+  const isLimitedAccess = !!user?.accessLimited;
   const links =
     role === "admin"
       ? adminLinks
       : role === "provider"
         ? providerLinks
         : customerLinks;
+
+  const visibleLinks = isLimitedAccess && role !== "admin"
+    ? links.filter((link) =>
+        ["/customer/dashboard", "/customer/chat", "/customer/settings", "/provider/dashboard", "/provider/chat", "/provider/settings"].includes(link.path),
+      )
+    : links;
 
   const handleLogout = () => {
     logout();
@@ -154,7 +161,7 @@ const handleNotificationClick = (notification) => {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-        {links.map(({ path, icon: Icon, label }) => {
+        {visibleLinks.map(({ path, icon: Icon, label }) => {
           const active = location.pathname === path;
           return (
             <Link
@@ -225,6 +232,11 @@ const handleNotificationClick = (notification) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-64">
+        {isLimitedAccess && role !== "admin" && (
+          <div className="mx-4 lg:mx-6 mt-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-300 px-4 py-3 text-sm">
+            {user?.accessMessage || "Your account is suspended or pending approval. You can message admin, but booking and service features are disabled until approval."}
+          </div>
+        )}
         {/* Top Bar */}
         <header className="h-16 bg-dark-900/80 backdrop-blur-md border-b border-dark-700 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20">
           <button

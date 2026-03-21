@@ -1,9 +1,9 @@
 package com.fixitnow.backend.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fixitnow.backend.entity.ProviderProfile;
 
 @Entity
 @Table(name = "users")
@@ -34,6 +34,19 @@ public class User {
 
     @Column(name = "longitude")
     private Double longitude;
+
+    @Column
+    private Boolean active = true;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 
     public Long getId() {
         return id;
@@ -97,5 +110,21 @@ public class User {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

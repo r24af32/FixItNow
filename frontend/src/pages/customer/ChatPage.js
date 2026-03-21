@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Send, Search, ArrowLeft, Phone, Video, MoreVertical } from 'lucide-react';
+import { Send, Search, ArrowLeft } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../../components/common/index';
@@ -18,16 +18,48 @@ export const ChatPage = () => {
   const [input, setInput]             = useState('');
   const [search, setSearch]           = useState('');
   const [showConvList, setShowConvList] = useState(true);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const stompClientRef   = useRef(null);
   const activeConvIdRef  = useRef(null);
   const bottomRef        = useRef(null);
   const inputRef         = useRef('');
+  const wsBaseUrl = api.defaults.baseURL?.replace(/\/api\/?$/, '') || 'http://localhost:8080';
+  const normalizeId = (value) => Number(value);
 
   // ─── 1. Load contacts ────────────────────────────────────────────────────
   useEffect(() => {
     const loadContacts = async () => {
       if (!user?.id) return;
+      const loaded = [];
+
+      // Always keep admin support visible for customer/provider accounts,
+      // even when bookings API is unavailable for restricted users.
+      if (user.role === 'customer' || user.role === 'provider') {
+        try {
+          const adminRes = await api.get('/users/admin-support');
+          const admin = adminRes.data || {};
+          loaded.push({
+            id: admin.id,
+            name: `${admin.name || 'Admin Support'} 🛡️`,
+            role: 'admin',
+            lastMsg: 'Need help? Message us.',
+            unread: 0,
+            online: true,
+          });
+        } catch {
+          // Fallback only if support endpoint is temporarily unavailable.
+          loaded.push({
+            id: 1,
+            name: 'Admin Support 🛡️',
+            role: 'admin',
+            lastMsg: 'Need help? Message us.',
+            unread: 0,
+            online: true,
+          });
+        }
+      }
+
       try {
         const endpoint = user.role === 'customer' ? '/bookings/customer' : '/bookings/provider';
         const res = await api.get(endpoint);
@@ -38,20 +70,6 @@ export const ChatPage = () => {
           if (user.role === 'provider' && b.customerId) uniqueIds.add(b.customerId);
         });
         if (targetContact?.contactId) uniqueIds.add(targetContact.contactId);
-
-        const loaded = [];
-
-        // 🔥 CRITICAL FIX: Inject Admin Support with YOUR Database ID (17)
-        if (user.role === 'customer' || user.role === 'provider') {
-          loaded.push({
-            id: 17, // <--- Matching your DB for admin@gmail.com
-            name: "Admin Support 🛡️",
-            role: "admin",
-            lastMsg: "Need help? Message us.",
-            unread: 0,
-            online: true,
-          });
-        }
 
         for (let id of uniqueIds) {
           try {
@@ -76,7 +94,11 @@ export const ChatPage = () => {
           setActiveConv(loaded[0]);
         }
       } catch (err) {
-        console.error('Failed to load contacts', err);
+        console.error('Failed to load booking contacts, showing admin support only:', err);
+        setContacts(loaded);
+        if (loaded.length > 0) {
+          setActiveConv(loaded[0]);
+        }
       }
     };
     loadContacts();
@@ -85,13 +107,13 @@ export const ChatPage = () => {
   // ─── 2. Fetch history when active chat changes ───────────────────────────
   useEffect(() => {
     if (!user?.id || !activeConv?.id) return;
-    activeConvIdRef.current = activeConv.id;
+    activeConvIdRef.current = normalizeId(activeConv.id);
 
     const fetchHistory = async () => {
       try {
-        const res = await api.get(`/messages/${user.id}/${activeConv.id}`);
+        const res = await api.get(`/messages/${normalizeId(user.id)}/${normalizeId(activeConv.id)}`);
         setMessages(res.data);
-        setContacts(prev => prev.map(c => c.id === activeConv.id ? { ...c, unread: 0 } : c));
+        setContacts(prev => prev.map(c => normalizeId(c.id) === normalizeId(activeConv.id) ? { ...c, unread: 0 } : c));
       } catch (err) {
         console.error('Failed to load chat history', err);
       }
@@ -103,25 +125,26 @@ export const ChatPage = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    const socket = new SockJS('http://localhost:8080/ws');
+    const socket = new SockJS(`${wsBaseUrl}/ws`);
     const client = Stomp.over(socket);
     client.debug = () => {};
 
     client.connect({}, () => {
-      client.subscribe(`/topic/messages/${user.id}`, (payload) => {
+      setIsSocketConnected(true);
+      client.subscribe(`/topic/messages/${normalizeId(user.id)}`, (payload) => {
         const msg = JSON.parse(payload.body);
 
-        if (activeConvIdRef.current === msg.senderId) {
+        if (normalizeId(activeConvIdRef.current) === normalizeId(msg.senderId)) {
           setMessages(prev => [...prev, msg]);
         }
 
         setContacts(prev => prev.map(c => {
-          if (c.id === msg.senderId) {
+          if (normalizeId(c.id) === normalizeId(msg.senderId)) {
             return {
               ...c,
               lastMsg: msg.content,
               time: formatTime(msg.sentAt),
-              unread: activeConvIdRef.current === msg.senderId ? 0 : (c.unread || 0) + 1,
+              unread: normalizeId(activeConvIdRef.current) === normalizeId(msg.senderId) ? 0 : (c.unread || 0) + 1,
             };
           }
           return c;
@@ -130,7 +153,10 @@ export const ChatPage = () => {
     });
 
     stompClientRef.current = client;
-    return () => { client.disconnect(); };
+    return () => {
+      setIsSocketConnected(false);
+      client.disconnect();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -143,23 +169,49 @@ export const ChatPage = () => {
   const sendMessage = useCallback(() => {
     const text = inputRef.current.trim();
     if (!text || !stompClientRef.current || !activeConv) return;
+    if (!isSocketConnected || !stompClientRef.current.connected) {
+      console.warn('Chat connection is not ready yet.');
+      return;
+    }
 
     const chatMessage = {
-      senderId:   user.id,
-      receiverId: activeConv.id,
+      senderId:   normalizeId(user.id),
+      receiverId: normalizeId(activeConv.id),
       content:    text,
     };
 
-    stompClientRef.current.send('/app/chat', {}, JSON.stringify(chatMessage));
+    try {
+      stompClientRef.current.send('/app/chat', {}, JSON.stringify(chatMessage));
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      return;
+    }
 
     setMessages(prev => [...prev, { ...chatMessage, id: Date.now(), sentAt: new Date().toISOString() }]);
     setContacts(prev => prev.map(c =>
-      c.id === activeConv.id ? { ...c, lastMsg: `You: ${text}`, time: 'Just now' } : c
+      normalizeId(c.id) === normalizeId(activeConv.id) ? { ...c, lastMsg: `You: ${text}`, time: 'Just now' } : c
     ));
 
     setInput('');
     inputRef.current = '';
-  }, [activeConv, user]);
+  }, [activeConv, user, isSocketConnected]);
+
+  // Polling fallback keeps both sides in sync even if websocket delivery is delayed.
+  useEffect(() => {
+    if (!user?.id || !activeConv?.id) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await api.get(`/messages/${normalizeId(user.id)}/${normalizeId(activeConv.id)}`);
+        setMessages(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error('Failed to poll messages:', err.response?.status, err.message);
+        // Continue polling even if there's an error
+      }
+    }, 1500);
+
+    return () => clearInterval(intervalId);
+  }, [user?.id, activeConv?.id]);
 
   const formatTime = (iso) => {
     if (!iso) return '';
@@ -267,7 +319,7 @@ export const ChatPage = () => {
             </div>
             <button
               onClick={sendMessage}
-              disabled={!input.trim()}
+              disabled={!input.trim() || !isSocketConnected}
               className="p-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-5 h-5" />

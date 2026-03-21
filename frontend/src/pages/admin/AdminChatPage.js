@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Search, ArrowLeft, Phone, Video, MoreVertical, MessageCircle } from 'lucide-react';
+import { Send, Search, ArrowLeft, MessageCircle } from 'lucide-react';
 import { api } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, SectionHeader } from '../../components/common/index';
@@ -8,6 +8,9 @@ import { Stomp } from '@stomp/stompjs';
 
 export const AdminChatPage = () => {
   const { user } = useAuth();
+  const normalizeId = (value) => Number(value);
+  // 🔥 FIXED: Use dynamic WebSocket URL like ChatPage does
+  const wsBaseUrl = api.defaults.baseURL?.replace(/\/api\/?$/, '') || 'http://localhost:8080';
 
   const [contacts, setContacts]         = useState([]);
   const [activeConv, setActiveConv]     = useState(null);
@@ -41,7 +44,7 @@ export const AdminChatPage = () => {
             lastMsg: 'Tap to chat',
             unread:  0,
             online:  true,
-            hasHistory: false // 🔥 Default to false
+            hasHistory: false
           };
         });
       } catch (err) { console.error('Failed to load providers', err); }
@@ -58,14 +61,14 @@ export const AdminChatPage = () => {
             lastMsg: 'Tap to chat',
             unread:  0,
             online:  true,
-            hasHistory: false // 🔥 Default to false
+            hasHistory: false
           }));
       } catch (err) { console.error('Failed to load customers', err); }
 
       const allContacts = [...providersList, ...customersList];
       const uniqueContacts = Array.from(new Map(allContacts.map(c => [c.id, c])).values());
 
-      // 🔥 Fetch history to find out who the Admin has ACTUALLY chatted with
+      // Fetch history to find out who the Admin has ACTUALLY chatted with
       const contactsWithHistory = await Promise.all(uniqueContacts.map(async (contact) => {
         try {
             const historyRes = await api.get(`/messages/${user.id}/${contact.id}`);
@@ -74,13 +77,13 @@ export const AdminChatPage = () => {
                 const lastMsg = msgs[msgs.length - 1];
                 return {
                     ...contact,
-                    hasHistory: true, // They chatted! Make them visible.
+                    hasHistory: true,
                     lastMsg: lastMsg.content,
                     time: new Date(lastMsg.sentAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
                     lastMsgTimestamp: new Date(lastMsg.sentAt).getTime()
                 };
             }
-        } catch (e) {}
+        } catch (e) { console.error('Failed to load history for contact', contact.id, e); }
         return contact;
       }));
 
@@ -102,14 +105,16 @@ export const AdminChatPage = () => {
   // ─── 2. Fetch history when active chat changes ───────────────────────────
   useEffect(() => {
     if (!user?.id || !activeConv?.id) return;
-    activeConvIdRef.current = activeConv.id;
+    activeConvIdRef.current = normalizeId(activeConv.id);
 
     const fetchHistory = async () => {
       try {
-        const res = await api.get(`/messages/${user.id}/${activeConv.id}`);
-        setMessages(res.data);
-        setContacts(prev => prev.map(c => c.id === activeConv.id ? { ...c, unread: 0 } : c));
-      } catch (err) { console.error('Failed to load chat history', err); }
+        const res = await api.get(`/messages/${normalizeId(user.id)}/${normalizeId(activeConv.id)}`);
+        setMessages(Array.isArray(res.data) ? res.data : []);
+        setContacts(prev => prev.map(c => normalizeId(c.id) === normalizeId(activeConv.id) ? { ...c, unread: 0 } : c));
+      } catch (err) { 
+        console.error('Failed to load chat history:', err.response?.status, err.message);
+      }
     };
     fetchHistory();
   }, [user, activeConv]);
@@ -118,37 +123,43 @@ export const AdminChatPage = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    const socket = new SockJS('http://localhost:8080/ws');
+    const socket = new SockJS(`${wsBaseUrl}/ws`);
     const client = Stomp.over(socket);
     client.debug = () => {};
 
     client.connect({}, () => {
-      client.subscribe(`/topic/messages/${user.id}`, (payload) => {
+      client.subscribe(`/topic/messages/${normalizeId(user.id)}`, (payload) => {
         const msg = JSON.parse(payload.body);
 
-        if (activeConvIdRef.current === msg.senderId) {
+        // Append realtime messages only for the currently open conversation.
+        if (normalizeId(activeConvIdRef.current) === normalizeId(msg.senderId)) {
           setMessages(prev => [...prev, msg]);
         }
 
+        // Keep sidebar preview and unread counters in sync.
         setContacts(prev => prev.map(c => {
-          if (c.id === msg.senderId) {
+          if (normalizeId(c.id) === normalizeId(msg.senderId)) {
             return {
               ...c,
               lastMsg: msg.content,
               time:    new Date(msg.sentAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-              unread:  activeConvIdRef.current === msg.senderId ? 0 : (c.unread || 0) + 1,
-              hasHistory: true // 🔥 Instantly reveal them in the sidebar if they message you!
+              unread:  normalizeId(activeConvIdRef.current) === normalizeId(msg.senderId) ? 0 : (c.unread || 0) + 1,
+              hasHistory: true
             };
           }
           return c;
         }));
       });
+    }, (error) => {
+      console.error('❌ WebSocket connection error:', error);
     });
 
     stompClientRef.current = client;
-    return () => { client.disconnect(); };
+    return () => {
+      client.disconnect();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, wsBaseUrl]);
 
   // ─── 4. Auto-scroll ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -158,32 +169,51 @@ export const AdminChatPage = () => {
   // ─── 5. Send ─────────────────────────────────────────────────────────────
   const sendMessage = useCallback(() => {
     const text = inputRef.current.trim();
-    if (!text || !stompClientRef.current || !activeConv) return;
+    if (!text || !stompClientRef.current || !activeConv) {
+      return;
+    }
 
-    const chatMessage = { senderId: user.id, receiverId: activeConv.id, content: text };
+    const chatMessage = { senderId: normalizeId(user.id), receiverId: normalizeId(activeConv.id), content: text };
     stompClientRef.current.send('/app/chat', {}, JSON.stringify(chatMessage));
 
     setMessages(prev => [...prev, { ...chatMessage, id: Date.now(), sentAt: new Date().toISOString() }]);
     setContacts(prev => prev.map(c =>
-      // 🔥 If Admin messages someone new, make them visible permanently!
-      c.id === activeConv.id ? { ...c, lastMsg: `You: ${text}`, time: 'Just now', hasHistory: true } : c
+      normalizeId(c.id) === normalizeId(activeConv.id) ? { ...c, lastMsg: `You: ${text}`, time: 'Just now', hasHistory: true } : c
     ));
     setInput('');
     inputRef.current = '';
   }, [activeConv, user]);
+
+  // Polling fallback keeps both sides in sync even if websocket delivery is delayed
+  useEffect(() => {
+    if (!user?.id || !activeConv?.id) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await api.get(`/messages/${normalizeId(user.id)}/${normalizeId(activeConv.id)}`);
+        const newMessages = Array.isArray(res.data) ? res.data : [];
+        // Polling fallback keeps both sides synchronized if socket updates are delayed.
+        setMessages(prev => {
+          return newMessages;
+        });
+      } catch (err) {
+        console.error('Failed to poll messages for admin chat:', err.response?.status, err.message);
+      }
+    }, 1500);
+
+    return () => clearInterval(intervalId);
+  }, [user?.id, activeConv?.id]);
 
   const formatTime = (iso) => {
     if (!iso) return '';
     return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // 🔥 Filter the sidebar view perfectly
+  // Filter the sidebar view
   const displayedContacts = contacts.filter(c => {
-    // If the admin is typing in the search bar, show EVERYONE who matches
     if (search.trim() !== '') {
       return c.name.toLowerCase().includes(search.toLowerCase());
     }
-    // Otherwise, ONLY show people they have chatted with (or who have unread messages)
     return c.hasHistory || c.unread > 0;
   });
 
@@ -270,22 +300,28 @@ export const AdminChatPage = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((msg, index) => {
-                const isSelf = msg.senderId === user.id;
-                return (
-                  <div key={msg.id || index} className={`flex ${isSelf ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-                    {!isSelf && <Avatar name={activeConv.name} size="sm" />}
-                    <div className="ml-2 mr-2 max-w-[70%]">
-                      <div className={isSelf ? 'chat-bubble-sent' : 'chat-bubble-received'}>
-                        <p className="text-sm leading-relaxed">{msg.content}</p>
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-dark-400">
+                  <p className="text-sm">No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                messages.map((msg, index) => {
+                  const isSelf = msg.senderId === user.id;
+                  return (
+                    <div key={msg.id || index} className={`flex ${isSelf ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+                      {!isSelf && <Avatar name={activeConv.name} size="sm" />}
+                      <div className="ml-2 mr-2 max-w-[70%]">
+                        <div className={isSelf ? 'chat-bubble-sent' : 'chat-bubble-received'}>
+                          <p className="text-sm leading-relaxed">{msg.content}</p>
+                        </div>
+                        <p className={`text-[10px] mt-1 text-dark-500 ${isSelf ? 'text-right' : 'text-left'}`}>
+                          {formatTime(msg.sentAt)}
+                        </p>
                       </div>
-                      <p className={`text-[10px] mt-1 text-dark-500 ${isSelf ? 'text-right' : 'text-left'}`}>
-                        {formatTime(msg.sentAt)}
-                      </p>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
               <div ref={bottomRef} />
             </div>
 

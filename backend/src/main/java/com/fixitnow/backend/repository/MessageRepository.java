@@ -15,4 +15,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     // and sorts it by time so the newest messages are at the bottom!
     @Query("SELECT m FROM Message m WHERE (m.senderId = :user1 AND m.receiverId = :user2) OR (m.senderId = :user2 AND m.receiverId = :user1) ORDER BY m.sentAt ASC")
     List<Message> findChatHistory(@Param("user1") Long user1, @Param("user2") Long user2);
+
+    @Query("SELECT m FROM Message m WHERE (m.senderId = :contactId AND m.receiverId IN :adminIds) OR (m.receiverId = :contactId AND m.senderId IN :adminIds) ORDER BY m.sentAt ASC")
+    List<Message> findChatHistoryWithAnyAdmin(@Param("contactId") Long contactId, @Param("adminIds") List<Long> adminIds);
 }

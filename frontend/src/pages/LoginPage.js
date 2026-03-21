@@ -42,15 +42,19 @@ const handleSubmit = async (e) => {
       // Integration of Yashashri's backend status codes
       if (err.response) {
         const status = err.response.status;
+        const backendMessage =
+          typeof err.response.data === "string"
+            ? err.response.data
+            : err.response.data?.message;
         
         if (status === 400) {
-          setError("Please provide both email and password.");
+          setError(backendMessage || "Please provide both email and password.");
         } else if (status === 401) {
           setError("Incorrect email or password.");
         } else if (status === 403) {
-          setError("Your provider account is pending Admin approval.");
+          setError(backendMessage || "Your account is suspended or pending approval. You can message admin, but booking and service features are disabled until approval.");
         } else {
-          setError("Server error. Please try again later.");
+          setError(backendMessage || "Server error. Please try again later.");
         }
       } else {
         setError("Network error. Is the backend running?");
