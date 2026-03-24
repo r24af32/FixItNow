@@ -1,6 +1,9 @@
 package com.fixitnow.backend.repository;
 
+import com.fixitnow.backend.dto.ServiceBookingAggregateDTO;
+import com.fixitnow.backend.dto.TopProviderAnalyticsDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -29,4 +32,37 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                     AND UPPER(b.status) = 'COMPLETED'
                 """)
         Double sumCompletedRevenueByProviderId(@Param("providerId") Long providerId);
+
+    @Query("""
+            SELECT COUNT(b)
+            FROM Booking b
+            WHERE UPPER(b.status) = UPPER(:status)
+            """)
+    long countByStatusIgnoreCase(@Param("status") String status);
+
+    @Query("""
+            SELECT new com.fixitnow.backend.dto.TopProviderAnalyticsDTO(
+                b.provider.id,
+                b.provider.name,
+                COUNT(b)
+            )
+            FROM Booking b
+            WHERE UPPER(b.status) = 'COMPLETED'
+            GROUP BY b.provider.id, b.provider.name
+            ORDER BY COUNT(b) DESC
+            """)
+    List<TopProviderAnalyticsDTO> findTopProvidersByCompletedBookings(Pageable pageable);
+
+    @Query("""
+            SELECT new com.fixitnow.backend.dto.ServiceBookingAggregateDTO(
+                b.service.id,
+                b.service.category,
+                b.service.subcategory,
+                COUNT(b)
+            )
+            FROM Booking b
+            GROUP BY b.service.id, b.service.category, b.service.subcategory
+            ORDER BY COUNT(b) DESC
+            """)
+    List<ServiceBookingAggregateDTO> findTopBookedServices(Pageable pageable);
 }
