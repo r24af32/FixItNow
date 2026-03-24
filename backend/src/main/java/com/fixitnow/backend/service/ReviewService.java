@@ -19,7 +19,7 @@ public class ReviewService {
     private ReviewRepository reviewRepository;
 
     @Autowired
-    private UserRepository userRepository; // 🔥 Inject this to find the names!
+    private UserRepository userRepository; //  Inject this to find the names!
 
     public Review createReview(Review review) {
         if (review.getRating() < 1 || review.getRating() > 5) {

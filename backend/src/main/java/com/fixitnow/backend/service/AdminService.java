@@ -36,9 +36,6 @@ public class AdminService {
             String category = profile.getCategory();
             String status = profile.getApprovalStatus();
 
-            // Count services for now (since booking logic may not exist)
-            List<ServiceEntity> services =
-                    serviceRepository.findByProviderId(providerId);
                 long completedJobs = bookingRepository.countByProviderIdAndStatus(providerId, "COMPLETED");
                 Double revenue = bookingRepository.sumCompletedRevenueByProviderId(providerId);
                 Double averageRating = reviewRepository.getAverageRatingByProviderId(providerId);
