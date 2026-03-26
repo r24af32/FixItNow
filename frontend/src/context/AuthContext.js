@@ -2,9 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-// Mock admin check - in production this would call backend API
-const MOCK_ADMIN_EXISTS = () => {
-  // Check localStorage for existing admin
+const hasPersistedAdminUser = () => {
   const savedUser = localStorage.getItem('fixitnow_user');
   if (savedUser) {
     const user = JSON.parse(savedUser);
@@ -48,8 +46,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('fixitnow_user', JSON.stringify(updated));
   };
 
-  // Check if admin already exists (frontend check - backend will enforce)
-  const isAdminExists = () => MOCK_ADMIN_EXISTS();
+  const isAdminExists = () => hasPersistedAdminUser();
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading, isAdminExists }}>

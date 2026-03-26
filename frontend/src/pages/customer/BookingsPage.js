@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Clock, Star, MessageCircle, X, Loader2, Flag } from "lucide-react";
-import { MOCK_SERVICES, api } from "../../utils/api";
+import { api } from "../../utils/api";
 import {
   StatusBadge,
   Modal,
@@ -27,6 +27,23 @@ export const CustomerBookingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [locallyPaid, setLocallyPaid] = useState({});
   const [cancelToast, setCancelToast] = useState(null);
+
+  const iconByCategory = {
+    electrical: "⚡",
+    plumbing: "🔧",
+    carpentry: "🪚",
+    painting: "🎨",
+    cleaning: "🧹",
+    appliance: "📺",
+    security: "🔒",
+    ac: "❄️",
+  };
+
+  const resolveServiceIcon = (serviceName) => {
+    const value = (serviceName || "").toLowerCase();
+    const matchedKey = Object.keys(iconByCategory).find((key) => value.includes(key));
+    return matchedKey ? iconByCategory[matchedKey] : "🔧";
+  };
 
   const tabs = [
     { id: "all", label: "All" },
@@ -179,7 +196,7 @@ export const CustomerBookingsPage = () => {
       ) : (
         <div className="space-y-4">
           {filtered.map((booking) => {
-            const serviceIcon = MOCK_SERVICES.find((s) => booking.service?.toLowerCase().includes(s.category.toLowerCase()))?.image || "🔧";
+            const serviceIcon = resolveServiceIcon(booking.service);
             return (
               <div key={booking.id} className="bg-dark-800 border border-dark-700 rounded-2xl p-5 hover:border-dark-600 transition-all">
                 <div className="flex items-start gap-4">

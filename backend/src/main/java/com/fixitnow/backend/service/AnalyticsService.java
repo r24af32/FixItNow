@@ -2,6 +2,8 @@ package com.fixitnow.backend.service;
 
 import com.fixitnow.backend.dto.AnalyticsBookingCountDTO;
 import com.fixitnow.backend.dto.AnalyticsUserCountDTO;
+import com.fixitnow.backend.dto.MonthlyBookingTrendDTO;
+import com.fixitnow.backend.dto.MonthlyRevenueDTO;
 import com.fixitnow.backend.dto.ServiceBookingAggregateDTO;
 import com.fixitnow.backend.dto.TopProviderAnalyticsDTO;
 import com.fixitnow.backend.dto.TopServiceAnalyticsDTO;
@@ -11,7 +13,13 @@ import com.fixitnow.backend.repository.UserRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AnalyticsService {
@@ -70,5 +78,39 @@ public class AnalyticsService {
             return category;
         }
         return "Unknown Service";
+    }
+
+    public List<MonthlyBookingTrendDTO> getMonthlyBookingTrends() {
+        LocalDate today = LocalDate.now();
+        List<MonthlyBookingTrendDTO> trends = new ArrayList<>();
+        
+        // Generate last 6 months
+        for (int i = 5; i >= 0; i--) {
+            YearMonth month = YearMonth.now().minusMonths(i);
+            LocalDate startDate = month.atDay(1);
+            LocalDate endDate = month.atEndOfMonth();
+            
+            long count = bookingRepository.countBookingsByDateRange(startDate, endDate);
+            trends.add(new MonthlyBookingTrendDTO(month.format(DateTimeFormatter.ofPattern("MMM")), count));
+        }
+        
+        return trends;
+    }
+
+    public List<MonthlyRevenueDTO> getMonthlyRevenue() {
+        LocalDate today = LocalDate.now();
+        List<MonthlyRevenueDTO> revenues = new ArrayList<>();
+        
+        // Generate last 6 months
+        for (int i = 5; i >= 0; i--) {
+            YearMonth month = YearMonth.now().minusMonths(i);
+            LocalDate startDate = month.atDay(1);
+            LocalDate endDate = month.atEndOfMonth();
+            
+            double revenue = bookingRepository.sumRevenueByDateRange(startDate, endDate);
+            revenues.add(new MonthlyRevenueDTO(month.format(DateTimeFormatter.ofPattern("MMM")), revenue));
+        }
+        
+        return revenues;
     }
 }

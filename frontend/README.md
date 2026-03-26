@@ -44,7 +44,7 @@ src/
 ├── context/
 │   └── AuthContext.js        # JWT auth state management
 ├── utils/
-│   └── api.js                # Axios instance + mock data
+│   └── api.js                # Axios instance + API helpers
 ├── components/
 │   └── common/
 │       ├── index.js          # Shared UI components
@@ -81,9 +81,9 @@ src/
    - Adds JWT Bearer tokens to all requests
    - Handles 401 errors by redirecting to login
 
-3. Replace mock data calls with real API calls:
+3. Use API calls for all runtime data:
    ```js
-   // Instead of MOCK_SERVICES, call:
+   // Example:
    const response = await api.get('/services');
    ```
 

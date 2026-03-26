@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import com.fixitnow.backend.entity.Booking;
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -65,4 +66,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             ORDER BY COUNT(b) DESC
             """)
     List<ServiceBookingAggregateDTO> findTopBookedServices(Pageable pageable);
+
+    @Query("""
+            SELECT COUNT(b)
+            FROM Booking b
+            WHERE CAST(b.bookingDate AS date) >= :startDate
+            AND CAST(b.bookingDate AS date) <= :endDate
+            """)
+    long countBookingsByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("""
+            SELECT COALESCE(SUM(b.service.price), 0)
+            FROM Booking b
+            WHERE CAST(b.bookingDate AS date) >= :startDate
+            AND CAST(b.bookingDate AS date) <= :endDate
+            AND UPPER(b.status) = 'COMPLETED'
+            """)
+    double sumRevenueByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

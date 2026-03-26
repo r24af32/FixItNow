@@ -13,6 +13,7 @@ import com.fixitnow.backend.repository.ReviewRepository;
 import com.fixitnow.backend.repository.UserRepository;
 
 @Service
+@SuppressWarnings("null")
 public class ReviewService {
 
     @Autowired

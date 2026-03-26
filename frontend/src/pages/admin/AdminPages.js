@@ -42,8 +42,14 @@ export const PendingProvidersPage = () => {
   const fetchPendingProviders = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/admin/pending-providers");
-      setProviders(Array.isArray(res.data) ? res.data : []);
+      const res = await api.get("/admin/providers");
+      const rows = Array.isArray(res.data) ? res.data : [];
+      setProviders(
+        rows.map((provider) => ({
+          ...provider,
+          approvalStatus: (provider?.approvalStatus || "PENDING").toUpperCase(),
+        })),
+      );
     } catch (err) {
       console.error("Error fetching pending providers:", err);
       setProviders([]);
@@ -81,9 +87,9 @@ export const PendingProvidersPage = () => {
 
   const counts = {
     all: providers.length,
-    pending: providers.filter((p) => p.approvalStatus === "PENDING").length,
-    approved: providers.filter((p) => p.approvalStatus === "APPROVED").length,
-    rejected: providers.filter((p) => p.approvalStatus === "REJECTED").length,
+    pending: providers.filter((p) => (p.approvalStatus || "").toUpperCase() === "PENDING").length,
+    approved: providers.filter((p) => (p.approvalStatus || "").toUpperCase() === "APPROVED").length,
+    rejected: providers.filter((p) => (p.approvalStatus || "").toUpperCase() === "REJECTED").length,
   };
 
   return (

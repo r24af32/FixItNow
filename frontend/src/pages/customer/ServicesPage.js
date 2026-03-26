@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import {
   api,
-  SERVICE_CATEGORIES,
+  fetchServiceCatalog,
+  buildCategoryLookup,
   normalizeServiceCategoryFields,
 } from "../../utils/api";
 import { SectionHeader } from "../../components/common/index";
@@ -24,9 +25,9 @@ export const ServicesPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode] = useState("grid");
   const [services, setServices] = useState([]);
-  const [categories] = useState(SERVICE_CATEGORIES);
+  const [categories, setCategories] = useState([]);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [categoryLookup] = useState({
+  const [categoryLookup, setCategoryLookup] = useState({
     categoryIdToName: new Map(),
     subcategoryIdToName: new Map(),
   });
@@ -120,8 +121,16 @@ export const ServicesPage = () => {
 
   // 🔥 FIX 1: Initial load & GPS tracking
   useEffect(() => {
+    const loadCatalog = async () => {
+      const catalog = await fetchServiceCatalog();
+      setCategories(catalog);
+      setCategoryLookup(buildCategoryLookup(catalog));
+    };
+
+    loadCatalog();
+
     // 1. Instantly load services using the default mapLocation (Chennai)
-    fetchServices(mapLocation);
+    fetchServices(mapLocation, categoryLookup);
 
     // 2. Try to find the user's real GPS location
     if (navigator.geolocation) {
@@ -132,7 +141,7 @@ export const ServicesPage = () => {
             lng: position.coords.longitude,
           };
           setMapLocation(coords);
-          fetchServices(coords); // 3. Reload services centered on their REAL location!
+          fetchServices(coords, categoryLookup); // 3. Reload services centered on their REAL location!
         },
         (error) => {
           console.warn("Could not get location. Using default.", error);
@@ -141,6 +150,13 @@ export const ServicesPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on page load
+
+  useEffect(() => {
+    if (mapLocation) {
+      fetchServices(mapLocation, categoryLookup);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryLookup]);
 
   const handleMapClick = (coords) => {
     setMapLocation(coords);

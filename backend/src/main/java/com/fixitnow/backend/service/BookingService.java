@@ -19,6 +19,7 @@ import com.fixitnow.backend.repository.ServiceRepository;
 import com.fixitnow.backend.repository.UserRepository;
 
 @Service
+@SuppressWarnings("null")
 public class BookingService {
 
     private static final String PENDING = "PENDING";

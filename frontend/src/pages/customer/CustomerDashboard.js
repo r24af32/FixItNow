@@ -10,7 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { api, SERVICE_CATEGORIES } from "../../utils/api";
+import { api, fetchServiceCatalog } from "../../utils/api";
 import { StatusBadge, SectionHeader } from "../../components/common/index";
 
 const StatCard = ({ icon, label, value, sub, color = "brand" }) => {
@@ -39,6 +39,7 @@ export const CustomerDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [nearbyServices, setNearbyServices] = useState([]);
   const [ratingsGiven, setRatingsGiven] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,9 +49,10 @@ export const CustomerDashboard = () => {
       try {
         setLoading(true);
 
-        const [bookingsRes, servicesRes] = await Promise.all([
+        const [bookingsRes, servicesRes, catalog] = await Promise.all([
           api.get("/bookings/customer"),
           api.get("/services"),
+          fetchServiceCatalog(),
         ]);
 
         const rawBookings = Array.isArray(bookingsRes.data)
@@ -83,7 +85,7 @@ export const CustomerDashboard = () => {
           ),
         );
 
-        const serviceIconByName = SERVICE_CATEGORIES.reduce((acc, category) => {
+        const serviceIconByName = (catalog || []).reduce((acc, category) => {
           acc[category.name.toLowerCase()] = category.icon;
           return acc;
         }, {});
@@ -104,6 +106,7 @@ export const CustomerDashboard = () => {
 
         setBookings(normalizedBookings);
         setNearbyServices(normalizedServices);
+        setCategories(Array.isArray(catalog) ? catalog : []);
         setRatingsGiven(
           reviewLists.flat().map((review) => Number(review.rating || 0)),
         );
@@ -111,6 +114,7 @@ export const CustomerDashboard = () => {
         console.error("Failed to load customer dashboard data", err);
         setBookings([]);
         setNearbyServices([]);
+        setCategories([]);
         setRatingsGiven([]);
       } finally {
         setLoading(false);
@@ -237,7 +241,7 @@ export const CustomerDashboard = () => {
           }
         />
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
-          {SERVICE_CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <Link
               key={cat.id}
               to={`/customer/services?category=${cat.name}`}
@@ -334,7 +338,7 @@ export const CustomerDashboard = () => {
                 className={`flex items-center gap-4 p-4 hover:bg-dark-750 transition-colors ${i < stats.recentBookings.length - 1 ? "border-b border-dark-700" : ""}`}
               >
                 <div className="w-10 h-10 bg-dark-700 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
-                  {SERVICE_CATEGORIES.find((c) =>
+                  {categories.find((c) =>
                     booking.service.includes(c.name),
                   )?.icon || "🔧"}
                 </div>

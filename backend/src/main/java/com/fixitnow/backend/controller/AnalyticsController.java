@@ -2,6 +2,8 @@ package com.fixitnow.backend.controller;
 
 import com.fixitnow.backend.dto.AnalyticsBookingCountDTO;
 import com.fixitnow.backend.dto.AnalyticsUserCountDTO;
+import com.fixitnow.backend.dto.MonthlyBookingTrendDTO;
+import com.fixitnow.backend.dto.MonthlyRevenueDTO;
 import com.fixitnow.backend.dto.TopProviderAnalyticsDTO;
 import com.fixitnow.backend.dto.TopServiceAnalyticsDTO;
 import com.fixitnow.backend.service.AnalyticsService;
@@ -49,6 +51,18 @@ public class AnalyticsController {
     public ResponseEntity<List<TopServiceAnalyticsDTO>> getTopServices(Principal principal) {
         verifyAdminAccess(principal);
         return ResponseEntity.ok(analyticsService.getTopServices());
+    }
+
+    @GetMapping("/bookings/monthly")
+    public ResponseEntity<List<MonthlyBookingTrendDTO>> getMonthlyBookingTrends(Principal principal) {
+        verifyAdminAccess(principal);
+        return ResponseEntity.ok(analyticsService.getMonthlyBookingTrends());
+    }
+
+    @GetMapping("/revenue/monthly")
+    public ResponseEntity<List<MonthlyRevenueDTO>> getMonthlyRevenue(Principal principal) {
+        verifyAdminAccess(principal);
+        return ResponseEntity.ok(analyticsService.getMonthlyRevenue());
     }
 
     private void verifyAdminAccess(Principal principal) {

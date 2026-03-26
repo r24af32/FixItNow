@@ -10,7 +10,7 @@ import { api } from '../../utils/api';
  *
  * Drop this component anywhere a provider's reviews need to be shown.
  * It owns its own fetch, so the parent page stays unchanged except for
- * removing the hardcoded REVIEWS array and swapping in this component.
+ * swapping in this component.
  *
  * Renders using the exact same card pattern already used in ServiceDetailPage.
  */

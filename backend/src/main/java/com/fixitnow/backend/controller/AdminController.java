@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class AdminController {
 
         
@@ -77,8 +78,13 @@ public class AdminController {
         //     return ResponseEntity.ok(pendingProviders);
         
         @GetMapping("/pending-providers")
-        public List<ProviderProfile> getAllProviders() {
-        return providerProfileRepository.findAll();
+        public List<ProviderProfile> getPendingProviders() {
+                return providerProfileRepository.findAll().stream()
+                                .filter(profile -> {
+                                        String status = profile.getApprovalStatus();
+                                        return status == null || status.isBlank() || "PENDING".equalsIgnoreCase(status);
+                                })
+                                .toList();
         }
 
         @GetMapping("/providers")

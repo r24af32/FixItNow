@@ -16,7 +16,6 @@ import {
   Navigation,
 } from "lucide-react";
 import {
-  SERVICE_CATEGORIES,
   fetchServiceCatalog,
   buildCategoryLookup,
   normalizeServiceCategoryFields,
@@ -35,7 +34,7 @@ export const ProviderServicesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [services, setServices] = useState([]);
-  const [categoryCatalog, setCategoryCatalog] = useState(SERVICE_CATEGORIES);
+  const [categoryCatalog, setCategoryCatalog] = useState([]);
   const [saving, setSaving] = useState(false);
   const [serviceError, setServiceError] = useState("");
   const [form, setForm] = useState({

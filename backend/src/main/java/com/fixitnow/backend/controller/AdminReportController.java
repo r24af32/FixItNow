@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/admin/reports")
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class AdminReportController {
 
     private final ReportRepository reportRepository;

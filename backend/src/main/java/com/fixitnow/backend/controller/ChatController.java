@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin(origins = "*")
+@SuppressWarnings("null")
 public class ChatController {
 
     @Autowired
