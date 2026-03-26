@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fixitnow.backend.entity.Report;
 import com.fixitnow.backend.repository.ReportRepository;
 
+import java.time.LocalDateTime;
+
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -35,6 +37,11 @@ public class ReportController {
 
         report.setReason(report.getReason().trim());
         report.setStatus("OPEN");
+
+        // assign report time if not already set
+        if (report.getCreatedAt() == null) {
+            report.setCreatedAt(LocalDateTime.now());
+        }
 
         Report saved = reportRepository.save(report);
         return ResponseEntity.ok(saved);
