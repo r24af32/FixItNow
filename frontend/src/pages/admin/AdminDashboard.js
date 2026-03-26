@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart2, Users, Shield, AlertTriangle, TrendingUp, CheckCircle, XCircle, Eye, Ban } from 'lucide-react';
 import { fetchAnalyticsData, fetchPendingProviders, fetchAdminReports, fetchAllUsers, api } from '../../utils/api';
 import { SectionHeader, Avatar, Modal } from '../../components/common/index';
@@ -80,6 +81,7 @@ const renderActiveCategoryShape = (props) => {
 };
 
 export const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
@@ -306,6 +308,10 @@ export const AdminDashboard = () => {
     } catch (err) {
       console.error('Error dismissing dispute:', err);
     }
+  };
+
+  const openDisputeDetail = (disputeId) => {
+    navigate('/admin/disputes', { state: { selectedDisputeId: disputeId } });
   };
 
   const setUserStatus = async (userId, action) => {
@@ -537,17 +543,20 @@ export const AdminDashboard = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`badge ${dispute.severity === 'high' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'} border`}>
-                      {dispute.severity}
-                    </span>
                     <button
-                      className="px-3 py-1.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs"
+                      className="px-3 py-1.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-xs hover:bg-blue-500/30 transition-all"
+                      onClick={() => openDisputeDetail(dispute.id)}
+                    >
+                      View
+                    </button>
+                    <button
+                      className="px-3 py-1.5 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs hover:bg-green-500/30 transition-all"
                       onClick={() => resolveDispute(dispute.id)}
                     >
                       Resolve
                     </button>
                     <button
-                      className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs"
+                      className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs hover:bg-red-500/30 transition-all"
                       onClick={() => dismissDispute(dispute.id)}
                     >
                       Dismiss

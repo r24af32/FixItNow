@@ -665,13 +665,19 @@ export const AdminProvidersPage = () => {
 export const AdminDisputesPage = () => {
   const [disputes, setDisputes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDispute, setSelectedDispute] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
 
   const fetchDisputes = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/admin/reports");
-      setDisputes(Array.isArray(res.data) ? res.data : []);
+      const res = await api.get("/admin/reports/detailed");
+      const rows = Array.isArray(res.data) ? res.data : [];
+      setDisputes(rows);
+      setSelectedDispute((prev) => {
+        if (!prev) return prev;
+        return rows.find((row) => row.id === prev.id) || null;
+      });
     } catch (err) {
       console.error("Failed to load reports:", err);
       setDisputes([]);
@@ -688,7 +694,8 @@ export const AdminDisputesPage = () => {
     setActionLoading((prev) => ({ ...prev, [id]: "resolve" }));
     try {
       await api.put(`/admin/reports/${id}/resolve`);
-      setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "resolved" } : d)));
+      setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "RESOLVED" } : d)));
+      setSelectedDispute((prev) => (prev?.id === id ? { ...prev, status: "RESOLVED" } : prev));
     } catch (err) {
       console.error("Resolve failed:", err);
     } finally {
@@ -700,11 +707,42 @@ export const AdminDisputesPage = () => {
     setActionLoading((prev) => ({ ...prev, [id]: "dismiss" }));
     try {
       await api.put(`/admin/reports/${id}/dismiss`);
-      setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "dismissed" } : d)));
+      setDisputes((prev) => prev.map((d) => (d.id === id ? { ...d, status: "DISMISSED" } : d)));
+      setSelectedDispute((prev) => (prev?.id === id ? { ...prev, status: "DISMISSED" } : prev));
     } catch (err) {
       console.error("Dismiss failed:", err);
     } finally {
       setActionLoading((prev) => ({ ...prev, [id]: null }));
+    }
+  };
+
+  const handleSuspendProvider = async (providerId) => {
+    if (!providerId) return;
+    setActionLoading((prev) => ({ ...prev, [`provider-${providerId}`]: "suspend-provider" }));
+    try {
+      await api.put(`/admin/users/${providerId}/suspend`);
+      setDisputes((prev) => prev.map((d) => (d.providerId === providerId ? { ...d, providerActive: false } : d)));
+      setSelectedDispute((prev) => (prev?.providerId === providerId ? { ...prev, providerActive: false } : prev));
+      await fetchDisputes();
+    } catch (err) {
+      console.error("Suspend provider failed:", err);
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [`provider-${providerId}`]: null }));
+    }
+  };
+
+  const handleSuspendService = async (serviceId) => {
+    if (!serviceId) return;
+    setActionLoading((prev) => ({ ...prev, [`service-${serviceId}`]: "suspend-service" }));
+    try {
+      await api.put(`/admin/services/${serviceId}/suspend`);
+      setDisputes((prev) => prev.map((d) => (d.serviceId === serviceId ? { ...d, serviceStatus: "SUSPENDED" } : d)));
+      setSelectedDispute((prev) => (prev?.serviceId === serviceId ? { ...prev, serviceStatus: "SUSPENDED" } : prev));
+      await fetchDisputes();
+    } catch (err) {
+      console.error("Suspend service failed:", err);
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [`service-${serviceId}`]: null }));
     }
   };
 
@@ -732,6 +770,10 @@ export const AdminDisputesPage = () => {
             const isOpen = (d.status || "").toUpperCase() === "OPEN";
             const isResolved = (d.status || "").toUpperCase() === "RESOLVED";
             const isDismissed = (d.status || "").toUpperCase() === "DISMISSED";
+            const isProviderSuspending = !!actionLoading[`provider-${d.providerId}`];
+            const isServiceSuspending = !!actionLoading[`service-${d.serviceId}`];
+            const isProviderSuspended = d.providerActive === false;
+            const isServiceSuspended = (d.serviceStatus || "").toUpperCase() === "SUSPENDED";
 
             return (
               <div
@@ -748,14 +790,31 @@ export const AdminDisputesPage = () => {
                     <p className="text-white font-medium">{d.reason}</p>
                     <p className="text-dark-400 text-sm mt-1">
                       Report #{d.id}
-                      {d.targetId ? ` | ${d.targetType || "Booking"} #${d.targetId}` : ""}
+                      {d.bookingId ? ` | booking #${d.bookingId}` : d.targetId ? ` | ${(d.targetType || "target").toLowerCase()} #${d.targetId}` : ""}
                       {d.createdAt ? ` | ${new Date(d.createdAt).toLocaleDateString()}` : ""}
                     </p>
+                    <p className="text-dark-400 text-xs mt-1">
+                      Customer: {d.customerName || "-"} | Provider: {d.providerName || "-"} | Service: {d.serviceCategory || "-"} {d.serviceSubcategory ? `(${d.serviceSubcategory})` : ""}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full border ${isProviderSuspended ? "text-red-300 border-red-500/30 bg-red-500/10" : "text-green-300 border-green-500/30 bg-green-500/10"}`}>
+                        Provider: {isProviderSuspended ? "SUSPENDED" : "ACTIVE"}
+                      </span>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full border ${isServiceSuspended ? "text-orange-300 border-orange-500/30 bg-orange-500/10" : "text-blue-300 border-blue-500/30 bg-blue-500/10"}`}>
+                        Service: {(d.serviceStatus || "UNKNOWN").toUpperCase()}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 {isOpen && (
                   <div className="flex gap-3 flex-wrap">
+                    <button
+                      onClick={() => setSelectedDispute(d)}
+                      className="py-2 px-3 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 text-sm font-medium transition-all"
+                    >
+                      <span className="inline-flex items-center gap-2"><Eye className="w-4 h-4" />Details</span>
+                    </button>
                     <button
                       onClick={() => handleResolve(d.id)}
                       disabled={!!actionLoading[d.id]}
@@ -770,6 +829,20 @@ export const AdminDisputesPage = () => {
                     >
                       {actionLoading[d.id] === "dismiss" ? "Dismissing..." : "Dismiss"}
                     </button>
+                    <button
+                      onClick={() => handleSuspendProvider(d.providerId)}
+                      disabled={!d.providerId || isProviderSuspending || isProviderSuspended}
+                      className="py-2 px-3 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-sm font-medium transition-all disabled:opacity-40"
+                    >
+                      {isProviderSuspending ? "Suspending provider..." : isProviderSuspended ? "Provider Suspended" : "Suspend Provider"}
+                    </button>
+                    <button
+                      onClick={() => handleSuspendService(d.serviceId)}
+                      disabled={!d.serviceId || isServiceSuspending || isServiceSuspended}
+                      className="py-2 px-3 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30 hover:bg-orange-500/30 text-sm font-medium transition-all disabled:opacity-40"
+                    >
+                      {isServiceSuspending ? "Suspending service..." : isServiceSuspended ? "Service Suspended" : "Suspend Service"}
+                    </button>
                   </div>
                 )}
               </div>
@@ -777,6 +850,80 @@ export const AdminDisputesPage = () => {
           })}
         </div>
       )}
+
+      <Modal isOpen={!!selectedDispute} onClose={() => setSelectedDispute(null)} title="Dispute Details" size="md">
+        {selectedDispute && (
+          <div className="space-y-4">
+            <div className="bg-dark-900/50 rounded-xl p-3">
+              <p className="text-xs text-dark-400">Issue</p>
+              <p className="text-sm text-white mt-1">{selectedDispute.reason}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-dark-900/50 rounded-xl p-3">
+                <p className="text-xs text-dark-400">Customer</p>
+                <p className="text-sm text-white mt-1">{selectedDispute.customerName || "-"}</p>
+                <p className="text-xs text-dark-300">{selectedDispute.customerEmail || "-"}</p>
+                <p className="text-xs text-dark-400 mt-1">ID: {selectedDispute.customerId || "-"}</p>
+              </div>
+              <div className="bg-dark-900/50 rounded-xl p-3">
+                <p className="text-xs text-dark-400">Provider</p>
+                <p className="text-sm text-white mt-1">{selectedDispute.providerName || "-"}</p>
+                <p className="text-xs text-dark-300">{selectedDispute.providerEmail || "-"}</p>
+                <p className="text-xs text-dark-300">Status: {selectedDispute.providerActive === false ? "SUSPENDED" : "ACTIVE"}</p>
+                <p className="text-xs text-dark-400 mt-1">ID: {selectedDispute.providerId || "-"}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-dark-900/50 rounded-xl p-3">
+                <p className="text-xs text-dark-400">Service</p>
+                <p className="text-sm text-white mt-1">{selectedDispute.serviceCategory || "-"} {selectedDispute.serviceSubcategory ? `(${selectedDispute.serviceSubcategory})` : ""}</p>
+                <p className="text-xs text-dark-300">Status: {selectedDispute.serviceStatus || "-"}</p>
+                <p className="text-xs text-dark-400 mt-1">ID: {selectedDispute.serviceId || "-"}</p>
+              </div>
+              <div className="bg-dark-900/50 rounded-xl p-3">
+                <p className="text-xs text-dark-400">Booking</p>
+                <p className="text-sm text-white mt-1">#{selectedDispute.bookingId || selectedDispute.targetId || "-"}</p>
+                <p className="text-xs text-dark-300">Date: {selectedDispute.bookingDate || "-"}</p>
+                <p className="text-xs text-dark-300">Slot: {selectedDispute.timeSlot || "-"}</p>
+                <p className="text-xs text-dark-300">Status: {selectedDispute.bookingStatus || "-"}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 flex-wrap justify-end">
+              <button
+                onClick={() => handleResolve(selectedDispute.id)}
+                disabled={!!actionLoading[selectedDispute.id]}
+                className="py-2 px-3 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 text-sm font-medium transition-all disabled:opacity-40"
+              >
+                {actionLoading[selectedDispute.id] === "resolve" ? "Resolving..." : "Resolve"}
+              </button>
+              <button
+                onClick={() => handleDismiss(selectedDispute.id)}
+                disabled={!!actionLoading[selectedDispute.id]}
+                className="py-2 px-3 rounded-xl bg-dark-700 hover:bg-dark-600 text-dark-300 hover:text-white border border-dark-600 text-sm font-medium transition-all disabled:opacity-40"
+              >
+                {actionLoading[selectedDispute.id] === "dismiss" ? "Dismissing..." : "Dismiss"}
+              </button>
+              <button
+                onClick={() => handleSuspendProvider(selectedDispute.providerId)}
+                disabled={!selectedDispute.providerId || !!actionLoading[`provider-${selectedDispute.providerId}`] || selectedDispute.providerActive === false}
+                className="py-2 px-3 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-sm font-medium transition-all disabled:opacity-40"
+              >
+                {!!actionLoading[`provider-${selectedDispute.providerId}`] ? "Suspending provider..." : selectedDispute.providerActive === false ? "Provider Suspended" : "Suspend Provider"}
+              </button>
+              <button
+                onClick={() => handleSuspendService(selectedDispute.serviceId)}
+                disabled={!selectedDispute.serviceId || !!actionLoading[`service-${selectedDispute.serviceId}`] || (selectedDispute.serviceStatus || "").toUpperCase() === "SUSPENDED"}
+                className="py-2 px-3 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30 hover:bg-orange-500/30 text-sm font-medium transition-all disabled:opacity-40"
+              >
+                {!!actionLoading[`service-${selectedDispute.serviceId}`] ? "Suspending service..." : (selectedDispute.serviceStatus || "").toUpperCase() === "SUSPENDED" ? "Service Suspended" : "Suspend Service"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
