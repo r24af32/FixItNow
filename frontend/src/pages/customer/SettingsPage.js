@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { User, MapPin, Bell, Shield, LogOut, Camera, Save } from 'lucide-react';
+import { User, MapPin, Bell, Shield, LogOut, Camera, Save, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, Alert, SectionHeader } from '../../components/common/index';
+import { api } from '../../utils/api';
 
 export const SettingsPage = () => {
   const { user, updateUser, logout } = useAuth();
@@ -9,6 +10,21 @@ export const SettingsPage = () => {
   const [form, setForm] = useState({ name: user?.name || '', email: user?.email || '', phone: '', location: user?.location || '' });
   const [saved, setSaved] = useState(false);
   const [notifications, setNotifications] = useState({ bookingUpdates: true, chatMessages: true, promotions: false, sms: true });
+  const [verificationData, setVerificationData] = useState({
+    idType: '',
+    idFile: null,
+    selfie: null,
+    skillCert: null,
+    skillText: '',
+    addressProof: null,
+    addressText: '',
+    experienceText: '',
+    workImages: [],
+    businessCert: null,
+  });
+
+  // not_submitted | pending | verified | rejected
+  const [verificationStatus, setVerificationStatus] = useState('not_submitted');
 
   const handleSave = () => {
     updateUser(form);
@@ -16,11 +32,35 @@ export const SettingsPage = () => {
     setTimeout(() => setSaved(false), 3000);
   };
 
+  // const tabs = [
+  //   { id: 'profile', label: 'Profile', icon: User },
+  //   { id: 'notifications', label: 'Notifications', icon: Bell },
+  //   { id: 'security', label: 'Security', icon: Shield },
+  // ];
+
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+
+    // Documents
+    { id: 'verification', label: 'Verification', icon: FileText },
     { id: 'security', label: 'Security', icon: Shield },
   ];
+
+  const ToggleSwitch = ({ enabled, onToggle }) => {
+    return (
+      <button
+        onClick={onToggle}
+        className={`w-12 h-6 flex items-center rounded-full p-1 transition-all ${
+          enabled ? "bg-brand-500 justify-end" : "bg-dark-600 justify-start"
+        }`}
+      >
+        <div className="w-4 h-4 bg-white rounded-full shadow-md transition-all" />
+      </button>
+    );
+  };
+
+  const status = user?.verificationStatus || verificationStatus;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -113,14 +153,290 @@ export const SettingsPage = () => {
                     <p className="font-medium text-white text-sm">{item.label}</p>
                     <p className="text-dark-400 text-xs mt-0.5">{item.desc}</p>
                   </div>
-                  <button
+                  {/* <button
                     onClick={() => setNotifications({ ...notifications, [item.key]: !notifications[item.key] })}
                     className={`relative w-12 h-6 rounded-full transition-colors ${notifications[item.key] ? 'bg-brand-500' : 'bg-dark-600'}`}
                   >
                     <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${notifications[item.key] ? 'translate-x-7' : 'translate-x-1'}`} />
-                  </button>
+                  </button> */}
+
+                  <ToggleSwitch
+                    enabled={notifications[item.key]}
+                    onToggle={() =>
+                      setNotifications({
+                        ...notifications,
+                        [item.key]: !notifications[item.key],
+                      })
+                    }
+                  />
                 </div>
               ))}
+            </div>
+          )}
+
+          {activeTab === 'verification' && (
+            <div className="bg-dark-800 border border-dark-700 rounded-2xl p-6 space-y-6">
+
+              <h3 className="font-display font-semibold text-lg text-white">
+                Provider Verification
+              </h3>
+
+              {/* STATUS BADGE */}
+              <div className="flex items-center gap-2">
+                {status === "APPROVED" ? (
+                  <span className="badge bg-green-500/20 text-green-400 border border-green-500/30">
+                    ✅ Verified Provider
+                  </span>
+                ) : status === "PENDING" ? (
+                  <span className="badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                    ⏳ Pending Approval
+                  </span>
+                ) : status === "REJECTED" ? (
+                  <span className="badge bg-red-500/20 text-red-400 border border-red-500/30">
+                    ❌ Rejected
+                  </span>
+                ) : (
+                  <span className="badge bg-red-500/20 text-red-400 border border-red-500/30">
+                    ❌ Not Verified
+                  </span>
+                )}
+              </div>
+
+              {/* MESSAGE */}
+              {status === "PENDING" && (
+                <p className="text-yellow-400 text-sm mt-2">
+                  Your documents have been submitted. Please wait for admin approval.
+                </p>
+              )}
+
+              {status === "REJECTED" && (
+                <p className="text-red-400 text-sm mt-2">
+                  Your documents were rejected. Please re-upload valid documents.
+                </p>
+              )}
+
+              {/* 1. ID PROOF */}
+              <div className="space-y-3">
+                <p className="text-sm text-white font-medium">Identity Proof *</p>
+
+                <select
+                  className="input-field"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, idType: e.target.value })
+                  }
+                >
+                  <option value="">Select</option>
+                  <option>Aadhaar Card</option>
+                  <option>PAN Card</option>
+                  <option>Driving License</option>
+                </select>
+
+                <input
+                  type="file"
+                  className="input-field mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border file:border-dark-600 file:bg-dark-800 file:text-white file:text-sm file:font-medium hover:file:bg-dark-700 file:transition-all cursor-pointer"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, idFile: e.target.files[0] })
+                  }
+                />
+              </div>
+
+              {/* 2. SELFIE */}
+              <div>
+                <p className="text-sm text-white font-medium">Selfie *</p>
+                <input
+                  type="file"
+                  className="input-field mt-1 
+                            file:mr-4 file:py-2 file:px-4 
+                            file:rounded-lg 
+                            file:border file:border-dark-600 
+                            file:bg-dark-800 
+                            file:text-white 
+                            file:text-sm file:font-medium 
+                            hover:file:bg-dark-700 
+                            file:transition-all 
+                            cursor-pointer"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, selfie: e.target.files[0] })
+                  }
+                />
+              </div>
+
+              {/* 3. SKILL VERIFICATION */}
+              <div className="space-y-2">
+                <p className="text-sm text-white font-medium">Skill Certificate</p>
+
+                <input
+                  type="file"
+                  className="input-field mt-1 
+                            file:mr-4 file:py-2 file:px-4 
+                            file:rounded-lg 
+                            file:border file:border-dark-600 
+                            file:bg-dark-800 
+                            file:text-white 
+                            file:text-sm file:font-medium 
+                            hover:file:bg-dark-700 
+                            file:transition-all 
+                            cursor-pointer"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, skillCert: e.target.files[0] })
+                  }
+                />
+
+                {/* <textarea
+                  placeholder="Or describe your experience..."
+                  className="input-field"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, skillText: e.target.value })
+                  }
+                /> */}
+              </div>
+
+              {/* 4. ADDRESS */}
+              <div className="space-y-2">
+                <p className="text-sm text-white font-medium">Address Proof *</p>
+
+                {/* <input
+                  type="file"
+                  className="input-field"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, addressProof: e.target.files[0] })
+                  }
+                /> */}
+
+                <input
+                  type="text"
+                  placeholder="Enter your address details"
+                  className="input-field"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, addressText: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* 5. EXPERIENCE */}
+              <div>
+                <p className="text-sm text-white font-medium">Experience *</p>
+                <textarea
+                  placeholder="Describe your work experience..."
+                  className="input-field"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, experienceText: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* 6. WORK PHOTOS */}
+              <div>
+                <p className="text-sm text-white font-medium">Work Photos</p>
+                <input
+                  type="file"
+                  multiple
+                  className="input-field mt-1 
+                            file:mr-4 file:py-2 file:px-4 
+                            file:rounded-lg 
+                            file:border file:border-dark-600 
+                            file:bg-dark-800 
+                            file:text-white 
+                            file:text-sm file:font-medium 
+                            hover:file:bg-dark-700 
+                            file:transition-all 
+                            cursor-pointer"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, workImages: e.target.files })
+                  }
+                />
+              </div>
+
+              {/* 7. BUSINESS */}
+              <div>
+                <p className="text-sm text-white font-medium">Business Proof</p>
+                <input
+                  type="file"
+                  className="input-field mt-1 
+                            file:mr-4 file:py-2 file:px-4 
+                            file:rounded-lg 
+                            file:border file:border-dark-600 
+                            file:bg-dark-800 
+                            file:text-white 
+                            file:text-sm file:font-medium 
+                            hover:file:bg-dark-700 
+                            file:transition-all 
+                            cursor-pointer"
+                  onChange={(e) =>
+                    setVerificationData({ ...verificationData, businessCert: e.target.files[0] })
+                  }
+                />
+              </div>
+
+              {/* SUBMIT */}
+              <button
+                onClick={async () => {
+                  try {
+                    if (!verificationData.idType) {
+                      return alert("Please select ID type");
+                    }
+
+                    if (!verificationData.idFile) {
+                      return alert("Please upload ID proof");
+                    }
+
+                    if (!verificationData.selfie) {
+                      return alert("Please upload selfie");
+                    }
+
+                    if (!verificationData.addressText) {
+                      return alert("Please enter address");
+                    }
+
+                    const formData = new FormData();
+                    formData.append("idType", verificationData.idType);
+                    formData.append("idFile", verificationData.idFile);
+                    formData.append("selfie", verificationData.selfie);
+                    formData.append("skillCert", verificationData.skillCert);
+                    formData.append("addressText", verificationData.addressText);
+                    formData.append("experienceText", verificationData.experienceText);
+
+                    if (verificationData.workImages) {
+                      Array.from(verificationData.workImages).forEach((file) => {
+                        formData.append("workImages", file);
+                      });
+                    }
+
+                    if (verificationData.businessCert) {
+                      formData.append("businessCert", verificationData.businessCert);
+                    }
+
+                    // 1. Send verification request
+                    await api.post("/provider/verification", formData, {
+                      headers: {
+                        "Content-Type": "multipart/form-data",
+                      },
+                    });
+
+                    // 2. Notify admin
+                    await api.post("/notifications/create", {
+                      role: "admin",
+                      type: "VERIFICATION_REQUEST",
+                      providerId: user.id,
+                      text: `${user.name} requested verification`,
+                      viewed: false,
+                      createdAt: Date.now()
+                    });
+
+                    setVerificationStatus("PENDING");
+
+                    alert("✅ Documents submitted. Wait for admin approval.");
+
+                  } catch (err) {
+                    console.error(err);
+                    console.error("BACKEND ERROR:", err.response?.data);
+                    alert(err.response?.data?.message || "❌ Submission failed");
+                  }
+                }}
+                className="btn-primary w-full"
+              >
+                Submit
+              </button>
             </div>
           )}
 

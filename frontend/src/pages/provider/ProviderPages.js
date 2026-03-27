@@ -155,7 +155,9 @@ export const ProviderServicesPage = () => {
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-dark-400">{service.completedJobs} jobs</span>
                 {service.status === "APPROVED" ? (
-                  <span className="badge bg-green-500/20 text-green-400 border border-green-500/30 text-[10px]">Verified</span>
+                  <span className="badge bg-green-500/20 text-green-400 border border-green-500/30 text-[10px]">
+                    ✔ Verified
+                  </span>
                 ) : service.status === "SUSPENDED" ? (
                   <span className="badge bg-red-500/20 text-red-400 border border-red-500/30 text-[10px]">Suspended</span>
                 ) : (

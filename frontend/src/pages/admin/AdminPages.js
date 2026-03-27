@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from "react-router-dom";
 import { Search, Filter, Eye, Ban, CheckCircle, Shield, AlertTriangle, Clock, FileText, Download, XCircle } from 'lucide-react';
 import { Avatar, SectionHeader, Modal } from '../../components/common/index';
 import { useEffect } from 'react';
@@ -64,11 +65,22 @@ export const PendingProvidersPage = () => {
   const [loading, setLoading] = useState(false);
 
   const [selectedProvider, setSelectedProvider] = useState(null);
-  const [filter, setFilter]           = useState('pending');
+  const [filter, setFilter] = useState('pending');
+  const location = useLocation();
+  const highlightId = new URLSearchParams(location.search).get("highlight");
 
   const approveProvider = async (provider) => {
     try {
       await api.put(`/admin/approve/${provider.user.id}`);
+
+      await api.post("/notifications/create", {
+        userId: provider.user.id,
+        role: "provider",
+        text: "✅ Your documents have been verified successfully!",
+        viewed: false,
+        createdAt: Date.now()
+      });
+
       fetchPendingProviders();
     } catch (err) {
       console.error("Approve failed:", err);
@@ -78,6 +90,15 @@ export const PendingProvidersPage = () => {
   const rejectProvider = async (provider) => {
     try {
       await api.put(`/admin/reject/${provider.user.id}`);
+
+      await api.post("/notifications/create", {
+        userId: provider.user.id,
+        role: "provider",
+        text: "❌ Your verification was rejected. Please upload valid documents.",
+        viewed: false,
+        createdAt: Date.now()
+      });
+
       fetchPendingProviders();
     } catch (err) {
       console.error("Reject failed:", err);
@@ -157,9 +178,13 @@ const fetchPendingProviders = async () => {
       ) : (
         <div className="space-y-4">
           {filtered.map(provider => (
-            <div key={provider.id} className={`bg-dark-800 rounded-2xl p-5 border transition-all ${
-              provider.approvalStatus === 'pending' ? 'border-yellow-500/20' : provider.approvalStatus === 'approved' ? 'border-green-500/20' : 'border-dark-700 opacity-75'
-            }`}>
+            <div key={provider.id}
+              className={`bg-dark-800 rounded-2xl p-5 border transition-all
+                ${provider.approvalStatus === 'pending' ? 'border-yellow-500/20' :
+                  provider.approvalStatus === 'approved' ? 'border-green-500/20' :
+                  'border-dark-700 opacity-75'}
+                ${provider.user?.id == highlightId ? "border-brand-500 shadow-lg scale-[1.01]" : ""}
+              `}>
               <div className="flex items-start gap-4 flex-wrap">
                 <Avatar name={provider.user?.name} size="md" />
                 <div className="flex-1 min-w-0">
@@ -189,10 +214,62 @@ const fetchPendingProviders = async () => {
                   </div>
 
                   {/* ID Proof Info */}
-                  <div className="mt-3 text-xs text-dark-400">
+                  {/* <div className="mt-3 text-xs text-dark-400">
                     <p>
                       <strong>Document Type:</strong> {provider.idDocType  || "Not Uploaded"}
                     </p>
+                  </div> */}
+
+                  {/* DOCUMENT SECTION */}
+                  <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
+
+                    {/* ID */}
+                    <div className="bg-dark-900/50 rounded-xl p-4">
+                      <p className="text-xs text-dark-400 mb-2">ID Proof</p>
+                      {selectedProvider?.idDocUrl ? (
+                        <img src={selectedProvider.idDocUrl} className="w-32 rounded-lg" />
+                      ) : (
+                        <p className="text-red-400 text-xs">No file uploaded</p>
+                      )}
+                    </div>
+
+                    {/* SELFIE */}
+                    <div className="bg-dark-900/50 rounded-xl p-4">
+                      <p className="text-xs text-dark-400 mb-2">Selfie</p>
+                      {selectedProvider?.selfieUrl ? (
+                        <img src={selectedProvider.selfieUrl} className="w-32 rounded-lg" />
+                      ) : (
+                        <p className="text-red-400 text-xs">No file uploaded</p>
+                      )}
+                    </div>
+
+                    {/* SKILL */}
+                    <div className="bg-dark-900/50 rounded-xl p-4">
+                      <p className="text-xs text-dark-400 mb-2">Skill Certificate</p>
+                      {selectedProvider?.skillDocUrl ? (
+                        <a href={selectedProvider.skillDocUrl} target="_blank" className="text-blue-400 text-xs underline">
+                          View File
+                        </a>
+                      ) : (
+                        <p className="text-red-400 text-xs">No file uploaded</p>
+                      )}
+                    </div>
+
+                    {/* ADDRESS */}
+                    <div className="bg-dark-900/50 rounded-xl p-4">
+                      <p className="text-xs text-dark-400 mb-2">Address</p>
+                      <p className="text-white text-sm">
+                        {selectedProvider?.addressText || "Not provided"}
+                      </p>
+                    </div>
+
+                    {/* EXPERIENCE */}
+                    <div className="bg-dark-900/50 rounded-xl p-4">
+                      <p className="text-xs text-dark-400 mb-2">Experience</p>
+                      <p className="text-white text-sm">
+                        {selectedProvider?.experienceText || "Not provided"}
+                      </p>
+                    </div>
                   </div>
 
                 </div>
@@ -231,96 +308,74 @@ const fetchPendingProviders = async () => {
       {/* Provider Detail Modal */}
       <Modal isOpen={!!selectedProvider} onClose={() => setSelectedProvider(null)} title="Provider Application Details" size="lg">
         {selectedProvider && (
-          <div className="space-y-5">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-              <Avatar name={selectedProvider.user.name} size="lg" />
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-bold text-white text-lg">{selectedProvider.user.name}</p>
-                  <ApprovalBadge
-                          status={selectedProvider.approvalStatus?.toLowerCase()}/>
+          <div className="flex flex-col max-h-[80vh]">
 
+            {/* SCROLL AREA */}
+            <div className="flex-1 overflow-y-auto space-y-5 pr-2">
+
+              {/* Header */}
+              <div className="flex items-center gap-4">
+                <Avatar name={selectedProvider.user.name} size="lg" />
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-bold text-white text-lg">{selectedProvider.user.name}</p>
+                    <ApprovalBadge status={selectedProvider.approvalStatus?.toLowerCase()} />
+                  </div>
+                  <p className="text-dark-400 text-sm">{selectedProvider.user?.email}</p>
+                  <p className="text-dark-400 text-sm">{selectedProvider.phone}</p>
                 </div>
-                <p className="text-dark-400 text-sm">
-           {selectedProvider.user?.email}
-               </p>
-                <p className="text-dark-400 text-sm">{selectedProvider.phone}</p>
               </div>
-            </div>
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {[
-  { label: 'Category', value: selectedProvider.category },
-  { label: 'Location', value: selectedProvider.user?.location },
-  { label: 'Service Area', value: selectedProvider.serviceArea },
-  { label: 'Submitted', value: "N/A" },
-].map(item => (
-                <div key={item.label} className="bg-dark-900/50 rounded-xl p-3">
-                  <p className="text-xs text-dark-400">{item.label}</p>
-                  <p className="text-sm font-medium text-white mt-0.5">{item.value}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Time Slots */}
-            <div className="bg-dark-900/50 rounded-xl p-4">
-              <p className="text-xs text-dark-400 mb-2 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" /> Selected Time Slots
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {Array.isArray(selectedProvider?.timeSlots) &&
-  selectedProvider.timeSlots.map(slot => (
-                  <span key={slot} className="px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-medium">
-                    {slot}
-                  </span>
+              {/* Details Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Category', value: selectedProvider.category },
+                  { label: 'Location', value: selectedProvider.user?.location },
+                  { label: 'Service Area', value: selectedProvider.serviceArea },
+                  { label: 'Submitted', value: "N/A" },
+                ].map(item => (
+                  <div key={item.label} className="bg-dark-900/50 rounded-xl p-3">
+                    <p className="text-xs text-dark-400">{item.label}</p>
+                    <p className="text-sm font-medium text-white mt-0.5">{item.value}</p>
+                  </div>
                 ))}
               </div>
-            </div>
 
-            {/* ID Proof */}
-            <div className="bg-dark-900/50 rounded-xl p-4">
-              <p className="text-xs text-dark-400 mb-3 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" /> ID Proof Document
-              </p>
-              <div className="flex items-center justify-between p-3 bg-dark-800 rounded-xl border border-dark-700">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                                  {selectedProvider?.idDocType || selectedProvider?.idProof?.idDocType || "N/A"}
-                                </p>
-
-                                <p className="text-xs text-dark-400">
-                                  {selectedProvider?.idDocType || selectedProvider?.idProof?.idDocType || "No file"} 
-                                  {" • "}
-                                  {selectedProvider?.idDocType || selectedProvider?.idProof?.idDocType || "Unknown size"}
-                                </p>
-
-                  </div>
+              {/* Time Slots */}
+              <div className="bg-dark-900/50 rounded-xl p-4">
+                <p className="text-xs text-dark-400 mb-2 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" /> Selected Time Slots
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedProvider.timeSlots?.map(slot => (
+                    <span key={slot} className="px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-medium">
+                      {slot}
+                    </span>
+                  ))}
                 </div>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-700 hover:bg-dark-600 text-dark-300 hover:text-white rounded-lg text-xs transition-all">
-                  <Download className="w-3.5 h-3.5" /> Download
-                </button>
               </div>
+
+              {/* DOCUMENT SECTION */}
+              <div className="space-y-4">
+                {/* Your document blocks (ID, Selfie, Skill, etc.) stay here */}
+              </div>
+
             </div>
 
+            {/* FIXED BUTTONS */}
             {/* Approve / Reject Actions */}
             {selectedProvider?.approvalStatus === "PENDING" && (
-              <div className="flex gap-3 pt-2">
+              <div className="pt-3 border-t border-dark-700 flex gap-3">
                 <button
                   onClick={() => rejectProvider(selectedProvider)}
-                  className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 font-medium text-sm transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 font-medium text-sm flex items-center justify-center gap-2"
                 >
                   <XCircle className="w-4 h-4" /> Reject Application
                 </button>
 
                 <button
                   onClick={() => approveProvider(selectedProvider)}
-                  className="flex-1 py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 font-medium text-sm transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 font-medium text-sm flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="w-4 h-4" /> Approve Provider
                 </button>
