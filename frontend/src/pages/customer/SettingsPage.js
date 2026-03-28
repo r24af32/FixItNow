@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, MapPin, Bell, Shield, LogOut, Camera, Save, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar, Alert, SectionHeader } from '../../components/common/index';
@@ -10,6 +10,7 @@ export const SettingsPage = () => {
   const [form, setForm] = useState({ name: user?.name || '', email: user?.email || '', phone: '', location: user?.location || '' });
   const [saved, setSaved] = useState(false);
   const [notifications, setNotifications] = useState({ bookingUpdates: true, chatMessages: true, promotions: false, sms: true });
+  const [errors, setErrors] = useState({});
   const [verificationData, setVerificationData] = useState({
     idType: '',
     idFile: null,
@@ -25,6 +26,25 @@ export const SettingsPage = () => {
 
   // not_submitted | pending | verified | rejected
   const [verificationStatus, setVerificationStatus] = useState('not_submitted');
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await api.get("/provider/status");
+
+        updateUser(prev => ({
+          ...prev,
+          verificationStatus: res.data.status
+        }));
+
+      } catch (err) {
+        console.error("Failed to fetch verification status", err);
+      }
+    };
+
+    if (user?.role === "provider") {
+      fetchStatus();
+    }
+  }, [user?.id]);
 
   const handleSave = () => {
     updateUser(form);
@@ -61,6 +81,33 @@ export const SettingsPage = () => {
   };
 
   const status = user?.verificationStatus || verificationStatus;
+
+  const validateFile = (file, fieldName) => {
+    if (!file) return true;
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "application/pdf"
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setErrors(prev => ({
+        ...prev,
+        [fieldName]: "Only JPG, PNG, JPEG or PDF files are allowed"
+      }));
+      return false;
+    }
+
+    // clear error if valid
+    setErrors(prev => ({
+      ...prev,
+      [fieldName]: ""
+    }));
+
+    return true;
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -234,9 +281,11 @@ export const SettingsPage = () => {
                 <input
                   type="file"
                   className="input-field mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border file:border-dark-600 file:bg-dark-800 file:text-white file:text-sm file:font-medium hover:file:bg-dark-700 file:transition-all cursor-pointer"
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!validateFile(file)) return;
                     setVerificationData({ ...verificationData, idFile: e.target.files[0] })
-                  }
+                  }}
                 />
               </div>
 
@@ -255,9 +304,11 @@ export const SettingsPage = () => {
                             hover:file:bg-dark-700 
                             file:transition-all 
                             cursor-pointer"
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!validateFile(file)) return;
                     setVerificationData({ ...verificationData, selfie: e.target.files[0] })
-                  }
+                  }}
                 />
               </div>
 
@@ -277,9 +328,11 @@ export const SettingsPage = () => {
                             hover:file:bg-dark-700 
                             file:transition-all 
                             cursor-pointer"
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!validateFile(file)) return;
                     setVerificationData({ ...verificationData, skillCert: e.target.files[0] })
-                  }
+                  }}
                 />
 
                 {/* <textarea
@@ -341,9 +394,44 @@ export const SettingsPage = () => {
                             hover:file:bg-dark-700 
                             file:transition-all 
                             cursor-pointer"
-                  onChange={(e) =>
-                    setVerificationData({ ...verificationData, workImages: e.target.files })
-                  }
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+
+                    // No file selected
+                    if (files.length === 0) {
+                      setErrors(prev => ({
+                        ...prev,
+                        workImages: "Please upload at least 1 image"
+                      }));
+                      return;
+                    }
+
+                    // More than 5 images
+                    if (files.length > 5) {
+                      setErrors(prev => ({
+                        ...prev,
+                        workImages: "Maximum 5 images allowed"
+                      }));
+                      return;
+                    }
+
+                    // Validate each file type
+                    for (let file of files) {
+                      if (!validateFile(file, "workImages")) return;
+                    }
+
+                    // Clear error
+                    setErrors(prev => ({
+                      ...prev,
+                      workImages: ""
+                    }));
+
+                    // Save files
+                    setVerificationData(prev => ({
+                      ...prev,
+                      workImages: files
+                    }));
+                  }}
                 />
               </div>
 
@@ -362,9 +450,11 @@ export const SettingsPage = () => {
                             hover:file:bg-dark-700 
                             file:transition-all 
                             cursor-pointer"
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!validateFile(file)) return;
                     setVerificationData({ ...verificationData, businessCert: e.target.files[0] })
-                  }
+                  }}
                 />
               </div>
 
@@ -425,6 +515,16 @@ export const SettingsPage = () => {
 
                     setVerificationStatus("PENDING");
 
+                    // Update local state
+                    setVerificationStatus("PENDING");
+
+                    // Update global user (VERY IMPORTANT)
+                    updateUser({
+                      ...user,
+                      verificationStatus: "PENDING"
+                    });
+
+                    // (optional) you can keep alert OR remove it
                     alert("✅ Documents submitted. Wait for admin approval.");
 
                   } catch (err) {

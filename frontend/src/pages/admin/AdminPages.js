@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from "react-router-dom";
 import { Search, Filter, Eye, Ban, CheckCircle, Shield, AlertTriangle, Clock, FileText, Download, XCircle } from 'lucide-react';
 import { Avatar, SectionHeader, Modal } from '../../components/common/index';
-import { useEffect } from 'react';
 import { api } from '../../utils/api';
 
 
@@ -88,13 +87,18 @@ export const PendingProvidersPage = () => {
   };
 
   const rejectProvider = async (provider) => {
+    const reason = prompt("Enter rejection reason:");
+    if (!reason) return;
+
     try {
-      await api.put(`/admin/reject/${provider.user.id}`);
+      await api.put(`/admin/reject/${provider.user.id}`, {
+        reason
+      });
 
       await api.post("/notifications/create", {
         userId: provider.user.id,
         role: "provider",
-        text: "❌ Your verification was rejected. Please upload valid documents.",
+        text: `❌ Your verification was rejected: ${reason}`,
         viewed: false,
         createdAt: Date.now()
       });
@@ -226,7 +230,8 @@ const fetchPendingProviders = async () => {
                     {/* ID */}
                     <div className="bg-dark-900/50 rounded-xl p-4">
                       <p className="text-xs text-dark-400 mb-2">ID Proof</p>
-                      {selectedProvider?.idDocUrl ? (
+                      {/* {selectedProvider?.idDocUrl ? ( */}
+                      {provider.idDocUrl ? (
                         <img src={selectedProvider.idDocUrl} className="w-32 rounded-lg" />
                       ) : (
                         <p className="text-red-400 text-xs">No file uploaded</p>
@@ -270,8 +275,44 @@ const fetchPendingProviders = async () => {
                         {selectedProvider?.experienceText || "Not provided"}
                       </p>
                     </div>
-                  </div>
 
+                    {/* WORK IMAGES */}
+                    <div className="bg-dark-900/50 rounded-xl p-4">
+                      <p className="text-xs text-dark-400 mb-2">Work Photos</p>
+
+                      {selectedProvider?.workImages?.length > 0 ? (
+                        <div className="flex gap-2 flex-wrap">
+                          {selectedProvider.workImages.map((img, i) => (
+                            <img
+                              key={i}
+                              src={img}
+                              className="w-24 h-24 object-cover rounded-lg"
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-red-400 text-xs">No images uploaded</p>
+                      )}
+                    </div>
+
+                    {/* BUSINESS PROOF */}
+                    <div className="bg-dark-900/50 rounded-xl p-4">
+                      <p className="text-xs text-dark-400 mb-2">Business Proof</p>
+
+                      {selectedProvider?.businessDocUrl ? (
+                        <a
+                          href={selectedProvider.businessDocUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-400 underline text-xs"
+                        >
+                          View File
+                        </a>
+                      ) : (
+                        <p className="text-red-400 text-xs">Not uploaded</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Action area */}
@@ -445,7 +486,7 @@ export const AdminUsersPage = () => {
                   <td className="p-4 text-dark-400 text-xs">{u.joined}</td>
                   <td className="p-4">
                     <span className={`badge border ${u.status === 'active' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
-                      {u.status}
+                      {u.status?.toLowerCase()}
                     </span>
                   </td>
                   <td className="p-4">

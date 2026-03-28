@@ -106,7 +106,9 @@ export const Layout = ({ children }) => {
 
 const handleNotificationClick = (notification) => {
     // FIX: Just navigate! The handleBellClick already marked everything as read in the DB.
-    if (role === 'provider') {
+    if (notification.type === "VERIFICATION_REQUEST") {
+      navigate(`/admin/pending-providers?highlight=${notification.providerId}`);
+    } else if (role === 'provider') {
       navigate(`/provider/bookings?highlight=${notification.bookingId}`);
     } else {
       navigate(`/customer/bookings?highlight=${notification.bookingId}`);
