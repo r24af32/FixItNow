@@ -300,11 +300,11 @@ export const ServicesPage = () => {
     <>
       {isGuest && (
         <header className="sticky top-0 z-30 border-b border-dark-700/70 bg-dark-950/90 backdrop-blur">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-0 min-h-16 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Link to="/" className="font-display font-bold text-2xl text-white">
               FixItNow
             </Link>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               <Link to="/login" className="btn-secondary py-2.5 px-5 text-sm">
                 Login
               </Link>
@@ -315,27 +315,27 @@ export const ServicesPage = () => {
           </div>
         </header>
       )}
-      <div className={`${isGuest ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" : ""} space-y-6 animate-fade-in`}>
+      <div className={`${isGuest ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" : ""} w-full min-w-0 space-y-6 animate-fade-in`}>
       <SectionHeader
         title="Find Services"
         subtitle="Browse verified professionals near you"
       />
 
       {/* Search Bars */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 items-stretch">
+        <div className="relative min-w-0">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Search electricians, plumbers, carpenters..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-field !pl-12 !pr-10"
+            className="input-field !pl-12 !pr-10 h-12"
           />
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-4 py-3 rounded-xl border font-medium text-sm transition-all ${
+            className={`flex items-center justify-center gap-2 px-3 sm:px-4 h-12 rounded-xl border font-medium text-sm transition-all min-w-[3rem] sm:min-w-0 ${
             showFilters
               ? "bg-brand-500 border-brand-500 text-white"
               : "bg-dark-800 border-dark-600 text-dark-300 hover:border-brand-500"
@@ -409,8 +409,8 @@ export const ServicesPage = () => {
         </div>
       )}
       {/* Location Search & GPS Button */}
-      <div className="flex gap-3 mt-2">
-        <div className="relative flex-1">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 mt-2 items-stretch">
+        <div className="relative min-w-0">
           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-400" />
           <input
             type="text"
@@ -420,8 +420,9 @@ export const ServicesPage = () => {
               const val = e.target.value;
               setLocationSearch(val);
 
-              if (typingTimeoutRef.current)
+              if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
+              }
 
               if (!val.trim()) {
                 setMapLocation(null);
@@ -450,14 +451,13 @@ export const ServicesPage = () => {
                 }
               }, 1000);
             }}
-            className="input-field !pl-11"
+            className="input-field !pl-11 h-12"
           />
         </div>
 
-        {/* LOCATE ME BUTTON */}
         <button
           onClick={handleLocateMe}
-          className="bg-dark-800 text-brand-400 border border-dark-600 px-4 py-2 rounded-xl flex items-center gap-2 hover:border-brand-500 transition-all font-medium text-sm shrink-0"
+          className="bg-dark-800 text-brand-400 border border-dark-600 px-3 sm:px-4 h-12 rounded-xl flex items-center justify-center gap-2 hover:border-brand-500 transition-all font-medium text-sm shrink-0 min-w-[3rem] sm:min-w-0"
         >
           <Navigation className="w-4 h-4" />{" "}
           <span className="hidden sm:inline">Locate Me</span>
@@ -528,7 +528,7 @@ export const ServicesPage = () => {
           </p>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((service) => (
             <ServiceCard key={service.id} service={service} view={viewMode} />
           ))}
@@ -541,7 +541,7 @@ export const ServicesPage = () => {
 
 const ServiceCard = ({ service }) => {
   return (
-    <div className="bg-dark-800 border border-dark-700 rounded-2xl overflow-hidden card-hover group">
+    <div className="bg-dark-800 border border-dark-700 rounded-2xl overflow-hidden card-hover group w-full min-w-0">
       <div className="p-5 pb-4">
         <div className="flex items-start justify-between mb-4">
           <div className="w-14 h-14 bg-dark-700 rounded-xl flex items-center justify-center text-3xl">
@@ -567,14 +567,14 @@ const ServiceCard = ({ service }) => {
         <p className="text-xs text-dark-400 mb-1">{service.subcategory}</p>
         <p className="text-sm text-dark-300 mb-3">👤 {service.providerName}</p>
       </div>
-      <div className="border-t border-dark-700 px-5 py-3 flex items-center justify-between bg-dark-900/50">
+      <div className="border-t border-dark-700 px-5 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-dark-900/50">
         <div>
           <p className="text-xs text-dark-500">Starting from</p>
           <p className="font-bold text-brand-400 text-xl">₹{service.price}</p>
         </div>
         <Link
           to={`/customer/services/${service.id}`}
-          className="btn-primary py-2.5 text-sm"
+          className="btn-primary py-2.5 text-sm w-full sm:w-auto text-center"
         >
           Book Now
         </Link>

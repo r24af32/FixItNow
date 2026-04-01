@@ -149,12 +149,12 @@ export const SkeletonCard = () => (
 
 // ─── Section Header ──────────────────────────────────────────────────────────
 export const SectionHeader = ({ title, subtitle, action }) => (
-  <div className="flex items-start justify-between mb-6">
-    <div>
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
+    <div className="min-w-0">
       <h2 className="font-display font-bold text-xl text-white">{title}</h2>
       {subtitle && <p className="text-dark-400 text-sm mt-1">{subtitle}</p>}
     </div>
-    {action}
+    {action && <div className="w-full sm:w-auto flex-shrink-0">{action}</div>}
   </div>
 );
 
