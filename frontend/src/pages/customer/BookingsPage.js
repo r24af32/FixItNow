@@ -176,7 +176,7 @@ export const CustomerBookingsPage = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full min-w-0 space-y-6 animate-fade-in">
       <SectionHeader title="My Bookings" subtitle="Track and manage all your service requests" />
 
       {/* Tabs */}
@@ -207,15 +207,15 @@ export const CustomerBookingsPage = () => {
           icon="📋"
           title="No bookings here"
           description={`You don't have any ${activeTab !== "all" ? activeTab : ""} bookings yet.`}
-          action={<Link to="/customer/services" className="btn-primary">Find Services</Link>}
+          action={<Link to="/customer/services" className="btn-primary w-full sm:w-auto text-center">Find Services</Link>}
         />
       ) : (
         <div className="space-y-4">
           {filtered.map((booking) => {
             const serviceIcon = resolveServiceIcon(booking.service);
             return (
-              <div key={booking.id} className="bg-dark-800 border border-dark-700 rounded-2xl p-5 hover:border-dark-600 transition-all">
-                <div className="flex items-start gap-4">
+              <div key={booking.id} className="bg-dark-800 border border-dark-700 rounded-2xl p-4 sm:p-5 hover:border-dark-600 transition-all w-full min-w-0 overflow-hidden">
+                <div className="flex flex-col sm:flex-row items-start gap-4">
                   <div className="w-14 h-14 bg-dark-700 rounded-xl flex items-center justify-center text-3xl flex-shrink-0">{serviceIcon}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -235,13 +235,13 @@ export const CustomerBookingsPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-dark-700 flex-wrap gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 pt-4 border-t border-dark-700">
                   <p className="text-brand-400 font-bold text-lg">₹{booking.price}</p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                     
                     {/* Completed Actions */}
                     {booking.status === "completed" && !submitted[booking.id] && (
-                        <button onClick={() => setReviewModal(booking)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/30 transition-all text-sm font-medium">
+                        <button onClick={() => setReviewModal(booking)} className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/30 transition-all text-sm font-medium w-full sm:w-auto">
                           <Star className="w-4 h-4" /> Rate Service
                         </button>
                     )}
@@ -249,7 +249,7 @@ export const CustomerBookingsPage = () => {
                         <span className="flex items-center gap-1.5 text-green-400 text-sm font-medium">✓ Review submitted</span>
                     )}
                     {booking.status === "completed" && !reportedBookings[booking.id] && (
-                        <button onClick={() => setReportModal(booking)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium">
+                        <button onClick={() => setReportModal(booking)} className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium w-full sm:w-auto">
                           <Flag className="w-4 h-4" /> Report Issue
                         </button>
                     )}
@@ -259,7 +259,7 @@ export const CustomerBookingsPage = () => {
 
                     {/* Pending Actions */}
                     {booking.status === "pending" && (
-                      <button onClick={() => cancelBooking(booking.id)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium">
+                      <button onClick={() => cancelBooking(booking.id)} className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium w-full sm:w-auto">
                         <X className="w-4 h-4" /> Cancel
                       </button>
                     )}
@@ -267,21 +267,21 @@ export const CustomerBookingsPage = () => {
                     {/* Confirmed Actions */}
                     {booking.status === "confirmed" && (
                       <>
-                        <Link to="/customer/chat" state={{ contactId: booking.providerId, contactName: booking.provider, contactRole: "Provider" }} className="flex items-center gap-1.5 btn-secondary py-2 text-sm">
+                        <Link to="/customer/chat" state={{ contactId: booking.providerId, contactName: booking.provider, contactRole: "Provider" }} className="flex items-center justify-center gap-1.5 btn-secondary py-2 text-sm w-full sm:w-auto">
                           <MessageCircle className="w-4 h-4" /> Chat
                         </Link>
 
                         {/* 🔥 FIX: Check Local Storage to Hide Pay Now! */}
                         {locallyPaid[String(booking.id)] ? (
-                          <span className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 text-sm font-medium">
+                          <span className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 text-sm font-medium w-full sm:w-auto">
                             ✓ Payment Processing
                           </span>
                         ) : (
                           <>
-                            <button onClick={() => cancelBooking(booking.id)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium">
+                            <button onClick={() => cancelBooking(booking.id)} className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all text-sm font-medium w-full sm:w-auto">
                               <X className="w-4 h-4" /> Cancel
                             </button>
-                            <Link to="/customer/payment" state={booking} className="btn-primary py-2 text-sm">
+                            <Link to="/customer/payment" state={booking} className="btn-primary py-2 text-sm w-full sm:w-auto text-center">
                               Pay Now
                             </Link>
                           </>

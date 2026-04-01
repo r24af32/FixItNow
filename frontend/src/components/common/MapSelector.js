@@ -54,6 +54,26 @@ const ChangeView = ({ center }) => {
   return null;
 };
 
+const InvalidateSize = ({ trigger }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      map.invalidateSize();
+    });
+
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [map, trigger]);
+
+  return null;
+};
+
 const LocationMarker = ({ currentLocation, isProviderView }) => {
   const activeLocation = currentLocation || { lat: 13.0827, lng: 80.2707 };
 
@@ -113,7 +133,8 @@ export default function MapSelector({
         center={[currentLocation.lat, currentLocation.lng]}
         zoom={13}
         style={{
-          height: "350px",
+          height: "clamp(280px, 45vh, 360px)",
+          minHeight: "280px",
           width: "100%",
           borderRadius: "16px",
           zIndex: 0,
@@ -127,6 +148,9 @@ export default function MapSelector({
         {(!route || route.length === 0) && (
           <ChangeView center={[currentLocation.lat, currentLocation.lng]} />
         )}
+        <InvalidateSize
+          trigger={`${currentLocation.lat},${currentLocation.lng},${route?.length || 0}`}
+        />
         <FitBounds route={route} />
         <LocationMarker
           currentLocation={mapLocation}
@@ -187,7 +211,7 @@ export default function MapSelector({
                     </div>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     {!isProviderView ? (
                       <>
                         <button
@@ -195,13 +219,13 @@ export default function MapSelector({
                             e.stopPropagation();
                             if (onProviderClick) onProviderClick(service);
                           }}
-                          className="flex-1 py-2 bg-dark-700 hover:bg-dark-600 text-white text-xs rounded-lg transition-colors border border-dark-600"
+                          className="flex-1 w-full py-2 bg-dark-700 hover:bg-dark-600 text-white text-xs rounded-lg transition-colors border border-dark-600"
                         >
                           📍 Distance
                         </button>
                         <a
                           href={`/customer/services/${service.id}`}
-                          className="flex-1 py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs text-center rounded-lg transition-colors"
+                          className="flex-1 w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs text-center rounded-lg transition-colors"
                         >
                           Book Now
                         </a>

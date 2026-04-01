@@ -123,7 +123,7 @@ export const ProviderServicesPage = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full min-w-0 space-y-6 animate-fade-in">
       <SectionHeader
         title="My Services"
         subtitle={`${services.length} services listed`}
@@ -147,11 +147,11 @@ export const ProviderServicesPage = () => {
         }
       />
 
-      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {services.map((service) => (
           <div
             key={service.id}
-            className="bg-dark-800 border border-dark-700 rounded-2xl p-5 card-hover"
+            className="bg-dark-800 border border-dark-700 rounded-2xl p-5 card-hover w-full min-w-0 overflow-hidden"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="w-12 h-12 bg-dark-700 rounded-xl flex items-center justify-center text-2xl">
@@ -235,7 +235,7 @@ export const ProviderServicesPage = () => {
         title={editingId ? "Update Service" : "Add New Service"}
         size="md"
       >
-        <div className="space-y-4">
+          <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-dark-300 mb-1.5 block">
               Category
@@ -299,7 +299,7 @@ export const ProviderServicesPage = () => {
               className="input-field resize-none text-sm"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-dark-300 mb-1.5 block">
                 Starting Price (₹)
@@ -730,7 +730,7 @@ export const ProviderBookingsPage = () => {
               key={booking.id}
               className="bg-dark-800 border border-dark-700 rounded-2xl p-5 hover:border-dark-600 transition-all"
             >
-              <div className="flex items-start gap-4 flex-wrap">
+              <div className="flex flex-col sm:flex-row items-start gap-4">
                 <div className="flex-1">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
@@ -741,7 +741,7 @@ export const ProviderBookingsPage = () => {
                     </div>
                     <StatusBadge status={booking.status} />
                   </div>
-                  <div className="flex items-center gap-4 mt-2 flex-wrap text-sm text-dark-400">
+                  <div className="mt-2 flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm text-dark-400">
                     <span className="flex items-center gap-1.5">
                       <Calendar className="w-4 h-4 text-brand-400" />{" "}
                       {booking.date}
@@ -772,13 +772,13 @@ export const ProviderBookingsPage = () => {
               </div>
 
               {booking.status === "pending" && (
-                <div className="flex gap-3 mt-4 pt-4 border-t border-dark-700">
+                <div className="flex flex-col sm:flex-row gap-3 mt-4 pt-4 border-t border-dark-700">
                   <button
                     onClick={() =>
                       updateStatus(booking.id, "confirmed", "accept")
                     }
                     disabled={submittingId === booking.id}
-                    className="flex-1 py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-all font-medium text-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
+                    className="flex-1 w-full py-2.5 rounded-xl bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 transition-all font-medium text-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
                   >
                     {submittingId === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "✓"} Accept Booking
                   </button>
@@ -787,17 +787,17 @@ export const ProviderBookingsPage = () => {
                       updateStatus(booking.id, "rejected", "reject")
                     }
                     disabled={submittingId === booking.id}
-                    className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all font-medium text-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
+                    className="flex-1 w-full py-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all font-medium text-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
                   >
                     {submittingId === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "✗"} Decline
                   </button>
                 </div>
               )}
               {booking.status === "confirmed" && (
-                <div className="flex gap-3 mt-4 pt-4 border-t border-dark-700">
+                <div className="flex flex-col sm:flex-row gap-3 mt-4 pt-4 border-t border-dark-700">
                   <button
                     onClick={() => handleViewRoute(booking)}
-                    className="flex-1 py-2.5 rounded-xl bg-dark-700 text-white border border-dark-600 hover:bg-dark-600 transition-all font-medium text-sm"
+                    className="flex-1 w-full py-2.5 rounded-xl bg-dark-700 text-white border border-dark-600 hover:bg-dark-600 transition-all font-medium text-sm"
                   >
                     📍 View Route
                   </button>
@@ -806,7 +806,7 @@ export const ProviderBookingsPage = () => {
                       updateStatus(booking.id, "completed", "update")
                     }
                     disabled={submittingId === booking.id}
-                    className="flex-1 py-2.5 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500 hover:text-white transition-all font-medium text-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
+                    className="flex-1 w-full py-2.5 rounded-xl bg-brand-500/20 text-brand-400 border border-brand-500/30 hover:bg-brand-500 hover:text-white transition-all font-medium text-sm disabled:opacity-40 flex items-center justify-center gap-1.5"
                   >
                     {submittingId === booking.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Mark as Completed ✓"}
                   </button>
@@ -825,7 +825,7 @@ export const ProviderBookingsPage = () => {
         {routeModal && routeInfo ? (
           <div className="space-y-4">
             {/* The Destination Banner */}
-            <div className="bg-dark-900/50 p-4 rounded-xl flex justify-between items-center border border-dark-700">
+            <div className="bg-dark-900/50 p-4 rounded-xl flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center border border-dark-700 w-full min-w-0">
               <div>
                 <p className="text-sm text-dark-400">Navigating to</p>
                 <p className="font-bold text-white text-lg">
@@ -841,7 +841,7 @@ export const ProviderBookingsPage = () => {
             </div>
 
             {/* NEW: Live Location Override Bar! */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-400" />
                 <input
@@ -855,7 +855,7 @@ export const ProviderBookingsPage = () => {
               <button
                 onClick={handleLiveLocation}
                 disabled={isLocating}
-                className="bg-dark-800 text-brand-400 border border-dark-600 px-4 py-2 rounded-xl flex items-center gap-2 hover:border-brand-500 transition-all font-medium text-sm shrink-0 disabled:opacity-50"
+                className="bg-dark-800 text-brand-400 border border-dark-600 px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:border-brand-500 transition-all font-medium text-sm shrink-0 disabled:opacity-50 w-full sm:w-auto"
               >
                 {isLocating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

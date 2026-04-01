@@ -241,7 +241,7 @@ export const Layout = ({ children }) => {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-64">
+      <div className="flex-1 min-w-0 flex flex-col lg:ml-64">
         {isLimitedAccess && role !== "admin" && (
           <div className="mx-4 lg:mx-6 mt-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-300 px-4 py-3 text-sm">
             {user?.accessMessage || "Your account is suspended or pending approval. You can message admin, but booking and service features are disabled until approval."}
@@ -407,8 +407,8 @@ export const Layout = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
-          <div className="page-enter max-w-7xl mx-auto">{children}</div>
+        <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto p-4 lg:p-6">
+          <div className="page-enter w-full max-w-7xl mx-auto min-w-0 overflow-x-hidden">{children}</div>
         </main>
 
         {/* Chatbot Assistant */}
